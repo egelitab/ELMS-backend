@@ -6,13 +6,10 @@ const path = require("path");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
-// You can add other routes later, e.g. coursesRoutes, materialsRoutes
+const courseRoutes = require("./routes/courseRoutes");
+const testRoutes = require("./routes/testRoutes");
 
 const app = express();
-const coursesRoutes = require("./routes/coursesRoutes");
-app.use("/api/courses", coursesRoutes);
-
-const testRoutes = require("./routes/testRoutes");
 
 // Middleware
 app.use(express.json());
@@ -26,9 +23,7 @@ app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
-// Example: app.use("/api/courses", coursesRoutes);
-
-
+app.use("/api/courses", courseRoutes);
 app.use("/api/test", testRoutes);
 
 // Health check route
@@ -36,12 +31,12 @@ app.get("/", (req, res) => {
   res.send("ELMS API Running...");
 });
 
-// 404 handler
-app.use((req, res, next) => {
+// 404 handler (MUST BE LAST)
+app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
 
-// Centralized error handler
+// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
@@ -49,9 +44,5 @@ app.use((err, req, res, next) => {
     message: err.message || "Internal Server Error",
   });
 });
-
-const courseRoutes = require("./routes/courseRoutes");
-
-app.use("/api/courses", courseRoutes);
 
 module.exports = app;
