@@ -7,6 +7,9 @@ const path = require("path");
 // Import routes
 const authRoutes = require("./routes/authRoutes");
 const courseRoutes = require("./routes/courseRoutes");
+const materialRoutes = require("./routes/materialRoutes");
+const groupRoutes = require("./routes/groupRoutes");
+const assignmentRoutes = require("./routes/assignmentRoutes");
 const testRoutes = require("./routes/testRoutes");
 
 const app = express();
@@ -24,6 +27,9 @@ app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
+app.use("/api/materials", materialRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/assignments", assignmentRoutes);
 app.use("/api/test", testRoutes);
 
 // Health check route
