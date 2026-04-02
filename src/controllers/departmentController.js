@@ -8,3 +8,21 @@ exports.getAllDepartments = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+exports.getAllFaculties = async (req, res) => {
+    try {
+        const faculties = await departmentService.getAllFaculties();
+        res.json({ success: true, data: faculties });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+exports.addDepartment = async (req, res) => {
+    try {
+        const newDept = await departmentService.addDepartment(req.body);
+        res.status(201).json({ success: true, data: newDept });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
