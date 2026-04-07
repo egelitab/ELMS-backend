@@ -13,8 +13,10 @@ CREATE TABLE IF NOT EXISTS departments (
 -- 2. Users Table (Administrators, Instructors, Students)
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    institutional_id VARCHAR(50) UNIQUE, -- e.g. BDU1501234
     title VARCHAR(50), -- e.g. Dr., Mr., Ms., Prof.
     first_name VARCHAR(100) NOT NULL,
+    middle_name VARCHAR(100),
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -140,3 +142,4 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_courses_instructor ON courses(instructor_id);
 CREATE INDEX idx_enrollments_course ON enrollments(course_id);
 CREATE INDEX idx_submissions_assignment ON submissions(assignment_id);
+

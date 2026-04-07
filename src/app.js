@@ -11,6 +11,8 @@ const materialRoutes = require("./routes/materialRoutes");
 const groupRoutes = require("./routes/groupRoutes");
 const assignmentRoutes = require("./routes/assignmentRoutes");
 const testRoutes = require("./routes/testRoutes");
+const userRoutes = require("./routes/userRoutes");
+const departmentRoutes = require("./routes/departmentRoutes");
 
 const app = express();
 
@@ -31,6 +33,8 @@ app.use("/api/materials", materialRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/assignments", assignmentRoutes);
 app.use("/api/test", testRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/departments", departmentRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
