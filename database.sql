@@ -1,9 +1,28 @@
 -- Local PostgreSQL Schema for Mobile-First ELMS (Bahir Dar University)
 -- Note: It is assumed that you have already created the database and connected.
 
--- 1. Departments Table
+-- 1. Institutions Table
+CREATE TABLE IF NOT EXISTS institutions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Faculties Table
+CREATE TABLE IF NOT EXISTS faculties (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    institution_id UUID REFERENCES institutions(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(institution_id, name)
+);
+
+-- 3. Departments Table
 CREATE TABLE IF NOT EXISTS departments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    faculty_id UUID REFERENCES faculties(id) ON DELETE CASCADE,
     name VARCHAR(255) UNIQUE NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -22,6 +41,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL CHECK (role IN ('student', 'instructor', 'admin')),
     department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    section VARCHAR(20), -- e.g. Section A, Section B
+    sex VARCHAR(10), -- e.g. Male, Female
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
