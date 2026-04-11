@@ -23,4 +23,12 @@ router.get(
   courseController.getInstructorCourses
 );
 
+// Instructor-specific targets (departments / sections)
+router.get(
+  "/instructor/targets",
+  verifyToken(),
+  authorizeRoles("instructor"),
+  courseController.getInstructorTargets
+);
+
 module.exports = router;

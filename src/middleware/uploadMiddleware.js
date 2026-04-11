@@ -31,12 +31,21 @@ const fileFilter = (req, file, cb) => {
     "application/vnd.ms-powerpoint", // .ppt
     "application/vnd.openxmlformats-officedocument.presentationml.presentation", // .pptx
     "video/mp4", // .mp4
+    "image/jpeg", // .jpg, .jpeg
+    "image/png", // .png
+    "image/gif", // .gif
+    "application/vnd.ms-excel", // .xls
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+    "text/plain", // .txt
   ];
 
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  const allowedExtensions = [".pdf", ".doc", ".docx", ".zip", ".ppt", ".pptx", ".mp4", ".jpg", ".jpeg", ".png", ".gif", ".xls", ".xlsx", ".txt"];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedMimeTypes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error("Invalid file type. Only PDF, DOC, PPT, ZIP, and MP4 are allowed."), false);
+    cb(new Error(`Invalid file type: ${ext} (${file.mimetype}). Allowed: PDF, Word, PPT, Excel, TXT, ZIP, MP4, Images.`), false);
   }
 };
 

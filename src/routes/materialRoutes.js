@@ -8,19 +8,27 @@ const upload = require("../middleware/uploadMiddleware");
 // Only instructors can upload materials
 router.post(
     "/",
-    verifyToken,
+    verifyToken(),
     authorizeRoles("instructor"),
     upload.single("file"), // the name attribute in form-data should be 'file'
     materialController.uploadMaterial
 );
 
 // Any logged-in user can view materials for a specific course
-router.get("/course/:courseId", verifyToken, materialController.getMaterialsByCourse);
+router.get("/course/:courseId", verifyToken(), materialController.getMaterialsByCourse);
+
+// Get all materials uploaded by the instructor
+router.get(
+    "/instructor",
+    verifyToken(),
+    authorizeRoles("instructor"),
+    materialController.getInstructorMaterials
+);
 
 // Only instructors can delete their materials
 router.delete(
     "/:id",
-    verifyToken,
+    verifyToken(),
     authorizeRoles("instructor"),
     materialController.deleteMaterial
 );

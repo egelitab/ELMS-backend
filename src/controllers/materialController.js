@@ -50,6 +50,16 @@ const getMaterialsByCourse = async (req, res) => {
     }
 };
 
+const getInstructorMaterials = async (req, res) => {
+    try {
+        const instructor_id = req.user.id;
+        const materials = await materialService.getInstructorMaterials(instructor_id);
+        res.json({ success: true, data: materials });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 const deleteMaterial = async (req, res) => {
     try {
         const { id } = req.params;
@@ -70,5 +80,6 @@ const deleteMaterial = async (req, res) => {
 module.exports = {
     uploadMaterial,
     getMaterialsByCourse,
+    getInstructorMaterials,
     deleteMaterial
 };

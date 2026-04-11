@@ -64,8 +64,25 @@ const getInstructorCourses = async (req, res) => {
   }
 };
 
+const getInstructorTargets = async (req, res) => {
+  try {
+    const instructor_id = req.user.id;
+    const targets = await courseService.getInstructorTargets(instructor_id);
+    res.json({
+      success: true,
+      data: targets,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
   getInstructorCourses,
+  getInstructorTargets,
 };
