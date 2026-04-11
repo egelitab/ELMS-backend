@@ -77,31 +77,9 @@ const deleteMaterial = async (req, res) => {
     }
 }
 
-const shareMaterials = async (req, res) => {
-    try {
-        const { material_ids, department_id, section } = req.body;
-
-        if (!material_ids || !Array.isArray(material_ids) || material_ids.length === 0) {
-            return res.status(400).json({ success: false, message: "No materials selected" });
-        }
-
-        await materialService.shareMaterials({
-            material_ids,
-            department_id,
-            section,
-            instructor_id: req.user.id
-        });
-
-        res.json({ success: true, message: "Materials shared successfully" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-};
-
 module.exports = {
     uploadMaterial,
     getMaterialsByCourse,
     getInstructorMaterials,
-    deleteMaterial,
-    shareMaterials
+    deleteMaterial
 };
