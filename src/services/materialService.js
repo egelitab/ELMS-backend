@@ -57,9 +57,21 @@ const deleteMaterial = async (id, instructor_id) => {
   return filePath;
 };
 
+const shareMaterials = async ({ material_ids, department_id, section, instructor_id }) => {
+  const queries = material_ids.map(id => {
+    return pool.query(
+      "INSERT INTO material_shares (material_id, department_id, section, shared_by) VALUES ($1, $2, $3, $4)",
+      [id, department_id, section, instructor_id]
+    );
+  });
+  await Promise.all(queries);
+  return { success: true };
+};
+
 module.exports = {
   uploadMaterial,
   getMaterialsByCourse,
   getInstructorMaterials,
   deleteMaterial,
+  shareMaterials,
 };

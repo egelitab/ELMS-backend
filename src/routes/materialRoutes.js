@@ -33,4 +33,12 @@ router.delete(
     materialController.deleteMaterial
 );
 
+// Only instructors can share materials
+router.post(
+    "/share",
+    verifyToken(),
+    authorizeRoles("instructor"),
+    materialController.shareMaterials
+);
+
 module.exports = router;
