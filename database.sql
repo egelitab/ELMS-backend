@@ -43,6 +43,8 @@ CREATE TABLE IF NOT EXISTS users (
     department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
     section VARCHAR(20), -- e.g. Section A, Section B
     sex VARCHAR(10), -- e.g. Male, Female
+    year INT,
+    semester INT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -56,6 +58,8 @@ CREATE TABLE IF NOT EXISTS courses (
     description TEXT,
     instructor_id UUID REFERENCES users(id) ON DELETE RESTRICT,
     department_id UUID REFERENCES departments(id) ON DELETE RESTRICT,
+    year INT,
+    semester INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

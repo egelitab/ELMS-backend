@@ -18,7 +18,13 @@ const getAllCourses = async () => {
   return rows;
 };
 
+const getInstructorCourses = async (instructor_id) => {
+  const { rows } = await pool.query("SELECT * FROM courses WHERE instructor_id = $1", [instructor_id]);
+  return rows;
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
+  getInstructorCourses,
 };
