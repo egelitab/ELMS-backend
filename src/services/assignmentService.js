@@ -91,11 +91,31 @@ const gradeSubmission = async ({ submission_id, grade, feedback, graded_by }) =>
     return rows[0];
 };
 
+const getGradingOverview = async (instructor_id) => {
+    const query = `
+        SELECT 
+            a.id, a.title, a.due_date, a.is_group_assignment,
+            c.title as course_title, c.course_code,
+            (SELECT COUNT(*)::int FROM submissions s WHERE s.assignment_id = a.id) as submitted_count,
+            (SELECT COUNT(*)::int FROM submissions s WHERE s.assignment_id = a.id AND s.grade IS NOT NULL) as graded_count,
+            CASE 
+                WHEN a.is_group_assignment THEN (SELECT COUNT(*)::int FROM groups g WHERE g.course_id = a.course_id)
+                ELSE (SELECT COUNT(*)::int FROM enrollments e WHERE e.course_id = a.course_id)
+            END as total_count
+        FROM assignments a
+        JOIN courses c ON a.course_id = c.id
+        WHERE c.instructor_id = $1
+        ORDER BY a.due_date DESC;
+    `;
+    const { rows } = await pool.query(query, [instructor_id]);
+    return rows;
+};
 
 module.exports = {
     createAssignment,
     getAssignmentsByCourse,
     submitAssignment,
     getSubmissionsByAssignment,
-    gradeSubmission
+    gradeSubmission,
+    getGradingOverview
 };

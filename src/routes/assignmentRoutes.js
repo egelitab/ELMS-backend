@@ -9,6 +9,14 @@ const upload = require("../middleware/uploadMiddleware");
 // Instructor Routes
 // ========================
 
+// Get overview of all assignments and grading status
+router.get(
+    "/grading-overview",
+    verifyToken(),
+    authorizeRoles("instructor"),
+    assignmentController.getGradingOverview
+);
+
 // Create an assignment
 router.post(
     "/",

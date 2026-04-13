@@ -63,6 +63,15 @@ exports.gradeSubmission = async (req, res) => {
     }
 }
 
+exports.getGradingOverview = async (req, res) => {
+    try {
+        const overview = await assignmentService.getGradingOverview(req.user.id);
+        res.json({ success: true, data: overview });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
 
 // ------------------------
 // STUDENT ACTIONS
