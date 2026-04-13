@@ -13,9 +13,11 @@ const createAssignment = async ({ course_id, title, description, due_date, file_
 
 const getAssignmentsByCourse = async (course_id) => {
     const query = `
-    SELECT * FROM assignments
-    WHERE course_id = $1
-    ORDER BY due_date ASC;
+    SELECT a.*, c.title as course_title 
+    FROM assignments a
+    JOIN courses c ON a.course_id = c.id
+    WHERE a.course_id = $1
+    ORDER BY a.due_date ASC;
   `;
     const { rows } = await pool.query(query, [course_id]);
     return rows;
