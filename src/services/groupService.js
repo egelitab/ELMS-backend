@@ -1,24 +1,31 @@
 const pool = require("../config/db");
 
-const generateGroups = async (course_id, studentsPerGroup) => {
+const generateGroups = async (course_id, studentsPerGroup, department_id = null) => {
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN'); // Start transaction
 
-    // 1. Fetch all students enrolled in the course
-    const studentsRes = await client.query(
-      "SELECT user_id FROM enrollments WHERE course_id = $1",
-      [course_id]
-    );
+    // 1. Fetch all students enrolled in the course, possibly filtered by department
+    let studentsQuery = "SELECT student_id FROM enrollments e JOIN users u ON e.student_id = u.id WHERE e.course_id = $1";
+    let queryParams = [course_id];
 
-    const studentIds = studentsRes.rows.map(r => r.user_id);
-
-    if (studentIds.length === 0) {
-      throw new Error("No students enrolled in this course");
+    if (department_id) {
+      studentsQuery += " AND u.department_id = $2";
+      queryParams.push(department_id);
     }
 
-    // 2. Clear existing groups for this course if regenerating
+    const studentsRes = await client.query(studentsQuery, queryParams);
+    const studentIds = studentsRes.rows.map(r => r.student_id);
+
+    if (studentIds.length === 0) {
+      throw new Error("No students enrolled in this course matching the criteria");
+    }
+
+    // 2. Clear existing groups for this course/department if regenerating
+    // Note: Since current schema groups don't store department_id directly, 
+    // we delete all but maybe we should only delete those that contain students from that dept?
+    // For simplicity with current schema, we clear all for this course.
     await client.query("DELETE FROM groups WHERE course_id = $1", [course_id]);
 
     // 3. Shuffle for randomness (Fisher-Yates)

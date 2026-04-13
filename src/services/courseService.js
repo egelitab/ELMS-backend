@@ -19,7 +19,14 @@ const getAllCourses = async () => {
 };
 
 const getInstructorCourses = async (instructor_id) => {
-  const { rows } = await pool.query("SELECT * FROM courses WHERE instructor_id = $1", [instructor_id]);
+  const query = `
+    SELECT c.*, COUNT(e.student_id)::int as student_count
+    FROM courses c
+    LEFT JOIN enrollments e ON c.id = e.course_id
+    WHERE c.instructor_id = $1
+    GROUP BY c.id
+  `;
+  const { rows } = await pool.query(query, [instructor_id]);
   return rows;
 };
 
