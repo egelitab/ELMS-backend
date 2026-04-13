@@ -47,8 +47,11 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
 
     const studentIds = students.map(s => s.student_id);
 
-    // 3. Clear existing groups for this course/department if regenerating
-    await client.query("DELETE FROM groups WHERE course_id = $1", [course_id]);
+    // 3. Clear existing groups ONLY for this specific filter (department + section)
+    await client.query(
+      "DELETE FROM groups WHERE course_id = $1 AND (department_id = $2 OR (department_id IS NULL AND $2 IS NULL)) AND (section = $3 OR (section IS NULL AND $3 IS NULL))",
+      [course_id, department_id, section]
+    );
 
     const createdGroups = [];
 
@@ -57,10 +60,10 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
     for (let i = 0; i < studentIds.length; i += studentsPerGroup) {
       const groupName = `${title} - ${groupIndex}`;
 
-      // Insert new group
+      // Insert new group with metadata
       const groupRes = await client.query(
-        "INSERT INTO groups (course_id, name) VALUES ($1, $2) RETURNING id, name",
-        [course_id, groupName]
+        "INSERT INTO groups (course_id, name, department_id, section, method, batch_name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name",
+        [course_id, groupName, department_id, section, method, title]
       );
 
       const groupId = groupRes.rows[0].id;
@@ -96,7 +99,7 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
 
 const getGroupsByCourse = async (course_id) => {
   const query = `
-    SELECT g.id, g.name, 
+    SELECT g.id, g.name, g.department_id, g.section, g.batch_name, g.method, d.name as department_name,
            COALESCE(
              json_agg(
                json_build_object(
@@ -107,11 +110,12 @@ const getGroupsByCourse = async (course_id) => {
              '[]'
            ) as members
     FROM groups g
+    LEFT JOIN departments d ON g.department_id = d.id
     LEFT JOIN group_members gm ON g.id = gm.group_id
     LEFT JOIN users u ON gm.user_id = u.id
     WHERE g.course_id = $1
-    GROUP BY g.id, g.name
-    ORDER BY g.name
+    GROUP BY g.id, g.name, g.department_id, g.section, g.batch_name, g.method, d.name
+    ORDER BY g.batch_name, g.name
   `;
   const { rows } = await pool.query(query, [course_id]);
   return rows;

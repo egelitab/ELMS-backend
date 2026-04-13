@@ -105,6 +105,10 @@ CREATE TABLE IF NOT EXISTS assignments (
 CREATE TABLE IF NOT EXISTS groups (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+    department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+    section VARCHAR(50), 
+    batch_name VARCHAR(100), -- The title provided during generation
+    method VARCHAR(50), -- e.g. 'Random', 'Alphabetic'
     name VARCHAR(100) NOT NULL, -- E.g., Group 1, Group 2
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
