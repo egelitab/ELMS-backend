@@ -3,7 +3,7 @@ const groupService = require("../services/groupService");
 const generateGroups = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const { studentsPerGroup, departmentId, section } = req.body;
+        const { studentsPerGroup, departmentId, section, method, title } = req.body;
 
         if (!studentsPerGroup || studentsPerGroup <= 0) {
             return res.status(400).json({ success: false, message: "Valid students_per_group is required" });
@@ -11,7 +11,7 @@ const generateGroups = async (req, res) => {
 
         // You could verify instructor-course ownership here
 
-        const groups = await groupService.generateGroups(courseId, parseInt(studentsPerGroup, 10), departmentId, section);
+        const groups = await groupService.generateGroups(courseId, parseInt(studentsPerGroup, 10), departmentId, section, method, title);
 
         res.status(201).json({
             success: true,

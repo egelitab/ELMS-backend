@@ -1,13 +1,13 @@
 const pool = require("../config/db");
 
-const generateGroups = async (course_id, studentsPerGroup, department_id = null, section = null) => {
+const generateGroups = async (course_id, studentsPerGroup, department_id = null, section = null, method = 'Random', title = 'Group') => {
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN'); // Start transaction
 
     // 1. Fetch all students enrolled in the course, possibly filtered by department and section
-    let studentsQuery = "SELECT student_id FROM enrollments e JOIN users u ON e.student_id = u.id WHERE e.course_id = $1";
+    let studentsQuery = "SELECT e.student_id, u.full_name FROM enrollments e JOIN users u ON e.student_id = u.id WHERE e.course_id = $1";
     let queryParams = [course_id];
 
     if (department_id) {
@@ -21,30 +21,36 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
     }
 
     const studentsRes = await client.query(studentsQuery, queryParams);
-    const studentIds = studentsRes.rows.map(r => r.student_id);
+    let students = studentsRes.rows;
 
-    if (studentIds.length === 0) {
+    if (students.length === 0) {
       throw new Error("No students enrolled in this course matching the criteria");
     }
 
-    // 2. Clear existing groups for this course/department if regenerating
-    // Note: Since current schema groups don't store department_id directly, 
-    // we delete all but maybe we should only delete those that contain students from that dept?
-    // For simplicity with current schema, we clear all for this course.
-    await client.query("DELETE FROM groups WHERE course_id = $1", [course_id]);
-
-    // 3. Shuffle for randomness (Fisher-Yates)
-    for (let i = studentIds.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [studentIds[i], studentIds[j]] = [studentIds[j], studentIds[i]];
+    // 2. Handle Grouping Method
+    if (method === 'Random') {
+      // Fisher-Yates shuffle
+      for (let i = students.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [students[i], students[j]] = [students[j], students[i]];
+      }
+    } else if (method === 'Alphabetic') {
+      students.sort((a, b) => a.full_name.localeCompare(b.full_name));
+    } else {
+      throw new Error("Method not supported");
     }
+
+    const studentIds = students.map(s => s.student_id);
+
+    // 3. Clear existing groups for this course/department if regenerating
+    await client.query("DELETE FROM groups WHERE course_id = $1", [course_id]);
 
     const createdGroups = [];
 
     // 4. Create groups
     let groupIndex = 1;
     for (let i = 0; i < studentIds.length; i += studentsPerGroup) {
-      const groupName = `Group ${groupIndex}`;
+      const groupName = `${title} - ${groupIndex}`;
 
       // Insert new group
       const groupRes = await client.query(
