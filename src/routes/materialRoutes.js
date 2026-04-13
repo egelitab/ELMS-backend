@@ -33,4 +33,20 @@ router.delete(
     materialController.deleteMaterial
 );
 
+// Only instructors can rename their materials
+router.patch(
+    "/:id/rename",
+    verifyToken(),
+    authorizeRoles("instructor"),
+    materialController.renameMaterial
+);
+
+// Instructors can share their materials with specific target sections
+router.post(
+    "/share",
+    verifyToken(),
+    authorizeRoles("instructor"),
+    materialController.shareMaterials
+);
+
 module.exports = router;

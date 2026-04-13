@@ -77,9 +77,38 @@ const deleteMaterial = async (req, res) => {
     }
 }
 
+const renameMaterial = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title } = req.body;
+        if (!title) return res.status(400).json({ success: false, message: "Title is required" });
+
+        const material = await materialService.renameMaterial(id, req.user.id, title);
+        res.json({ success: true, message: "Material renamed successfully", data: material });
+    } catch (error) {
+        res.status(403).json({ success: false, message: error.message });
+    }
+};
+
+const shareMaterials = async (req, res) => {
+    try {
+        const { material_ids, department_id, section } = req.body;
+        if (!material_ids || material_ids.length === 0 || !department_id) {
+            return res.status(400).json({ success: false, message: "Materials and Department are required" });
+        }
+
+        await materialService.shareMaterials(material_ids, department_id, section);
+        res.json({ success: true, message: "Materials shared successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     uploadMaterial,
     getMaterialsByCourse,
     getInstructorMaterials,
-    deleteMaterial
+    deleteMaterial,
+    renameMaterial,
+    shareMaterials
 };

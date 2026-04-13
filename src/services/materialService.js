@@ -57,9 +57,43 @@ const deleteMaterial = async (id, instructor_id) => {
   return filePath;
 };
 
+const renameMaterial = async (id, instructor_id, new_title) => {
+  const checkQuery = `
+    SELECT m.id 
+    FROM materials m
+    WHERE m.id = $1 AND m.uploaded_by = $2
+  `;
+  const checkResult = await pool.query(checkQuery, [id, instructor_id]);
+  if (checkResult.rows.length === 0) {
+    throw new Error("Unauthorized or material not found");
+  }
+
+  const query = `UPDATE materials SET title = $1 WHERE id = $2 RETURNING *`;
+  const { rows } = await pool.query(query, [new_title, id]);
+  return rows[0];
+};
+
+const shareMaterials = async (material_ids, department_id, section) => {
+  const values = [];
+  let queryText = "INSERT INTO material_shares (material_id, department_id, section) VALUES ";
+  let paramIndex = 1;
+  const placeholders = [];
+
+  for (const mid of material_ids) {
+    placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+    values.push(mid, department_id, section || null);
+  }
+
+  queryText += placeholders.join(", ");
+
+  await pool.query(queryText, values);
+};
+
 module.exports = {
   uploadMaterial,
   getMaterialsByCourse,
   getInstructorMaterials,
   deleteMaterial,
+  renameMaterial,
+  shareMaterials,
 };
