@@ -61,9 +61,23 @@ const getInstructorTargets = async (instructor_id) => {
   return Object.values(deptsMap);
 };
 
+const getCourseEnrollmentStats = async (course_id) => {
+  const query = `
+    SELECT d.id as department_id, d.name as department_name, u.section, COUNT(e.student_id)::int as student_count
+    FROM enrollments e
+    JOIN users u ON e.student_id = u.id
+    JOIN departments d ON u.department_id = d.id
+    WHERE e.course_id = $1
+    GROUP BY d.id, d.name, u.section
+  `;
+  const { rows } = await pool.query(query, [course_id]);
+  return rows;
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
   getInstructorCourses,
   getInstructorTargets,
+  getCourseEnrollmentStats,
 };

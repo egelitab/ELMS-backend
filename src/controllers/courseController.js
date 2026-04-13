@@ -80,9 +80,26 @@ const getInstructorTargets = async (req, res) => {
   }
 };
 
+const getCourseEnrollmentStats = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const stats = await courseService.getCourseEnrollmentStats(courseId);
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
   getInstructorCourses,
   getInstructorTargets,
+  getCourseEnrollmentStats,
 };

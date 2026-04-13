@@ -31,4 +31,10 @@ router.get(
   courseController.getInstructorTargets
 );
 
+router.get(
+  "/:courseId/enrollment-stats",
+  verifyToken(),
+  courseController.getCourseEnrollmentStats
+);
+
 module.exports = router;
