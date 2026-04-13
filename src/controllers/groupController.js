@@ -26,10 +26,6 @@ const generateGroups = async (req, res) => {
 const getGroups = async (req, res) => {
     try {
         const { courseId } = req.params;
-
-        // Any enrolled student or instructor can view the groups
-        // Should add participation check here optionally
-
         const groups = await groupService.getGroupsByCourse(courseId);
         res.json({ success: true, data: groups });
     } catch (error) {
@@ -37,7 +33,20 @@ const getGroups = async (req, res) => {
     }
 };
 
+const deleteBatch = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const { batchName } = req.query; // Send via query param or body
+
+        await groupService.deleteGroupsByBatch(courseId, batchName);
+        res.json({ success: true, message: "Group set deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     generateGroups,
-    getGroups
+    getGroups,
+    deleteBatch
 };

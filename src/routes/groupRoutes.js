@@ -19,4 +19,12 @@ router.get(
     groupController.getGroups
 );
 
+// Delete a specific batch of groups
+router.delete(
+    "/:courseId/batch",
+    verifyToken(),
+    authorizeRoles("instructor"),
+    groupController.deleteBatch
+);
+
 module.exports = router;

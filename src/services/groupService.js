@@ -121,7 +121,25 @@ const getGroupsByCourse = async (course_id) => {
   return rows;
 }
 
+const deleteGroupsByBatch = async (course_id, batch_name) => {
+  let query;
+  let params;
+
+  // If the batch_name is the default fallback or explicitly null
+  if (!batch_name || batch_name === 'General Groups') {
+    query = "DELETE FROM groups WHERE course_id = $1 AND (batch_name IS NULL OR batch_name = 'General Groups')";
+    params = [course_id];
+  } else {
+    query = "DELETE FROM groups WHERE course_id = $1 AND batch_name = $2";
+    params = [course_id, batch_name];
+  }
+
+  await pool.query(query, params);
+  return { success: true };
+}
+
 module.exports = {
   generateGroups,
-  getGroupsByCourse
+  getGroupsByCourse,
+  deleteGroupsByBatch
 };
