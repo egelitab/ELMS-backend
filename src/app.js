@@ -13,6 +13,8 @@ const assignmentRoutes = require("./routes/assignmentRoutes");
 const testRoutes = require("./routes/testRoutes");
 const userRoutes = require("./routes/userRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+const announcementRoutes = require("./routes/announcementRoutes");
 
 const app = express();
 
@@ -35,6 +37,8 @@ app.use("/api/assignments", assignmentRoutes);
 app.use("/api/test", testRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/departments", departmentRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/announcements", announcementRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
