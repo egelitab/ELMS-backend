@@ -1,18 +1,23 @@
 const pool = require("../config/db");
 
-const generateGroups = async (course_id, studentsPerGroup, department_id = null) => {
+const generateGroups = async (course_id, studentsPerGroup, department_id = null, section = null) => {
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN'); // Start transaction
 
-    // 1. Fetch all students enrolled in the course, possibly filtered by department
+    // 1. Fetch all students enrolled in the course, possibly filtered by department and section
     let studentsQuery = "SELECT student_id FROM enrollments e JOIN users u ON e.student_id = u.id WHERE e.course_id = $1";
     let queryParams = [course_id];
 
     if (department_id) {
-      studentsQuery += " AND u.department_id = $2";
+      studentsQuery += ` AND u.department_id = $${queryParams.length + 1}`;
       queryParams.push(department_id);
+    }
+
+    if (section) {
+      studentsQuery += ` AND u.section = $${queryParams.length + 1}`;
+      queryParams.push(section);
     }
 
     const studentsRes = await client.query(studentsQuery, queryParams);
