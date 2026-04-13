@@ -7,7 +7,7 @@ const authorizeRoles = require("../middleware/roleMiddleware");
 // Generate generic groups for a course
 router.post(
     "/:courseId/generate",
-    verifyToken,
+    verifyToken(),
     authorizeRoles("instructor"),
     groupController.generateGroups
 );
@@ -15,7 +15,7 @@ router.post(
 // View groups for a generic course
 router.get(
     "/:courseId",
-    verifyToken,
+    verifyToken(),
     groupController.getGroups
 );
 

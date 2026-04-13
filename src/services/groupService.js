@@ -6,8 +6,13 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
   try {
     await client.query('BEGIN'); // Start transaction
 
-    // 1. Fetch all students enrolled in the course, possibly filtered by department and section
-    let studentsQuery = "SELECT e.student_id, u.full_name FROM enrollments e JOIN users u ON e.student_id = u.id WHERE e.course_id = $1";
+    // 1. Fetch students, including names for alphabetic sorting
+    let studentsQuery = `
+      SELECT e.student_id, (u.first_name || ' ' || u.last_name) as full_name 
+      FROM enrollments e 
+      JOIN users u ON e.student_id = u.id 
+      WHERE e.course_id = $1
+    `;
     let queryParams = [course_id];
 
     if (department_id) {
@@ -91,7 +96,16 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
 
 const getGroupsByCourse = async (course_id) => {
   const query = `
-    SELECT g.id, g.name, json_agg(json_build_object('id', u.id, 'first_name', u.first_name, 'last_name', u.last_name)) as members
+    SELECT g.id, g.name, 
+           COALESCE(
+             json_agg(
+               json_build_object(
+                 'id', u.id, 
+                 'full_name', (u.first_name || ' ' || u.last_name)
+               )
+             ) FILTER (WHERE u.id IS NOT NULL), 
+             '[]'
+           ) as members
     FROM groups g
     LEFT JOIN group_members gm ON g.id = gm.group_id
     LEFT JOIN users u ON gm.user_id = u.id
