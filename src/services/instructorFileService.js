@@ -1,6 +1,26 @@
 const pool = require("../config/db");
 
 const createFolder = async (name, parent_id, instructor_id) => {
+    // Check for duplicate name in both folders and files in the same path
+    const folderCheck = parent_id
+        ? "SELECT id FROM instructor_folders WHERE instructor_id = $1 AND name = $2 AND parent_id = $3"
+        : "SELECT id FROM instructor_folders WHERE instructor_id = $1 AND name = $2 AND parent_id IS NULL";
+
+    const fileCheck = parent_id
+        ? "SELECT id FROM instructor_files WHERE instructor_id = $1 AND name = $2 AND folder_id = $3"
+        : "SELECT id FROM instructor_files WHERE instructor_id = $1 AND name = $2 AND folder_id IS NULL";
+
+    const params = parent_id ? [instructor_id, name, parent_id] : [instructor_id, name];
+
+    const [existingFolder, existingFile] = await Promise.all([
+        pool.query(folderCheck, params),
+        pool.query(fileCheck, params)
+    ]);
+
+    if (existingFolder.rows.length > 0 || existingFile.rows.length > 0) {
+        throw new Error("A folder or file with this name already exists in this location.");
+    }
+
     const query = `
         INSERT INTO instructor_folders (name, parent_id, instructor_id)
         VALUES ($1, $2, $3)
@@ -10,29 +30,75 @@ const createFolder = async (name, parent_id, instructor_id) => {
     return rows[0];
 };
 
+const getOrCreateUploadsFolder = async (instructor_id) => {
+    const checkQuery = "SELECT id FROM instructor_folders WHERE instructor_id = $1 AND name = 'Uploads' AND parent_id IS NULL";
+    const { rows } = await pool.query(checkQuery, [instructor_id]);
+
+    if (rows.length > 0) return rows[0].id;
+
+    const query = `
+        INSERT INTO instructor_folders (name, parent_id, instructor_id)
+        VALUES ('Uploads', NULL, $1)
+        RETURNING id;
+    `;
+    const { rows: result } = await pool.query(query, [instructor_id]);
+    return result[0].id;
+};
+
 const getFolders = async (instructor_id, parent_id) => {
+    // Ensure Uploads folder exists for every request to root
+    if (!parent_id) {
+        await getOrCreateUploadsFolder(instructor_id);
+    }
+
     const query = parent_id
-        ? "SELECT * FROM instructor_folders WHERE instructor_id = $1 AND parent_id = $2 ORDER BY name ASC"
-        : "SELECT * FROM instructor_folders WHERE instructor_id = $1 AND parent_id IS NULL ORDER BY name ASC";
+        ? "SELECT * FROM instructor_folders WHERE instructor_id = $1 AND parent_id = $2 AND is_deleted = false ORDER BY name ASC"
+        : "SELECT * FROM instructor_folders WHERE instructor_id = $1 AND parent_id IS NULL AND is_deleted = false ORDER BY name ASC";
     const params = parent_id ? [instructor_id, parent_id] : [instructor_id];
     const { rows } = await pool.query(query, params);
     return rows;
 };
 
 const uploadFile = async ({ name, folder_id, instructor_id, file_path, file_type, file_size_bytes }) => {
+    // If no folder_id, use (and ensure) the "Uploads" folder
+    let targetFolderId = folder_id;
+    if (!targetFolderId) {
+        targetFolderId = await getOrCreateUploadsFolder(instructor_id);
+    }
+
+    // Check for duplicate name in both folders and files in the same folder
+    const folderCheck = targetFolderId
+        ? "SELECT id FROM instructor_folders WHERE instructor_id = $1 AND name = $2 AND parent_id = $3"
+        : "SELECT id FROM instructor_folders WHERE instructor_id = $1 AND name = $2 AND parent_id IS NULL";
+
+    const fileCheck = targetFolderId
+        ? "SELECT id FROM instructor_files WHERE instructor_id = $1 AND name = $2 AND folder_id = $3"
+        : "SELECT id FROM instructor_files WHERE instructor_id = $1 AND name = $2 AND folder_id IS NULL";
+
+    const params = targetFolderId ? [instructor_id, name, targetFolderId] : [instructor_id, name];
+
+    const [existingFolder, existingFile] = await Promise.all([
+        pool.query(folderCheck, params),
+        pool.query(fileCheck, params)
+    ]);
+
+    if (existingFolder.rows.length > 0 || existingFile.rows.length > 0) {
+        throw new Error("A folder or file with this name already exists in this location.");
+    }
+
     const query = `
         INSERT INTO instructor_files (name, folder_id, instructor_id, file_path, file_type, file_size_bytes)
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *;
     `;
-    const { rows } = await pool.query(query, [name, folder_id || null, instructor_id, file_path, file_type, file_size_bytes]);
+    const { rows } = await pool.query(query, [name, targetFolderId, instructor_id, file_path, file_type, file_size_bytes]);
     return rows[0];
 };
 
 const getFiles = async (instructor_id, folder_id) => {
     const query = folder_id
-        ? "SELECT * FROM instructor_files WHERE instructor_id = $1 AND folder_id = $2 ORDER BY created_at DESC"
-        : "SELECT * FROM instructor_files WHERE instructor_id = $1 AND folder_id IS NULL ORDER BY created_at DESC";
+        ? "SELECT * FROM instructor_files WHERE instructor_id = $1 AND folder_id = $2 AND is_deleted = false ORDER BY created_at DESC"
+        : "SELECT * FROM instructor_files WHERE instructor_id = $1 AND folder_id IS NULL AND is_deleted = false ORDER BY created_at DESC";
     const params = folder_id ? [instructor_id, folder_id] : [instructor_id];
     const { rows } = await pool.query(query, params);
     return rows;
@@ -51,12 +117,56 @@ const getStorageStats = async (instructor_id) => {
 const getRecentFiles = async (instructor_id) => {
     const query = `
         SELECT * FROM instructor_files
-        WHERE instructor_id = $1
+        WHERE instructor_id = $1 AND is_deleted = false
         ORDER BY created_at DESC
         LIMIT 10;
     `;
     const { rows } = await pool.query(query, [instructor_id]);
     return rows;
+};
+
+const renameFolder = async (id, name, instructor_id) => {
+    const query = "UPDATE instructor_folders SET name = $1 WHERE id = $2 AND instructor_id = $3 RETURNING *";
+    const { rows } = await pool.query(query, [name, id, instructor_id]);
+    return rows[0];
+};
+
+const renameFile = async (id, name, instructor_id) => {
+    const query = "UPDATE instructor_files SET name = $1 WHERE id = $2 AND instructor_id = $3 RETURNING *";
+    const { rows } = await pool.query(query, [name, id, instructor_id]);
+    return rows[0];
+};
+
+const softDeleteFolder = async (id, instructor_id) => {
+    const query = "UPDATE instructor_folders SET is_deleted = true, deleted_at = NOW() WHERE id = $1 AND instructor_id = $2 RETURNING *";
+    const { rows } = await pool.query(query, [id, instructor_id]);
+    return rows[0];
+};
+
+const softDeleteFile = async (id, instructor_id) => {
+    const query = "UPDATE instructor_files SET is_deleted = true, deleted_at = NOW() WHERE id = $1 AND instructor_id = $2 RETURNING *";
+    const { rows } = await pool.query(query, [id, instructor_id]);
+    return rows[0];
+};
+
+const moveEntry = async (id, type, targetFolderId, instructor_id) => {
+    const table = type === 'folder' ? 'instructor_folders' : 'instructor_files';
+    const folderCol = type === 'folder' ? 'parent_id' : 'folder_id';
+    const query = `UPDATE ${table} SET ${folderCol} = $1 WHERE id = $2 AND instructor_id = $3 RETURNING *`;
+    const { rows } = await pool.query(query, [targetFolderId || null, id, instructor_id]);
+    return rows[0];
+};
+
+const getRecycleBin = async (instructor_id) => {
+    const folderQuery = "SELECT *, 'folder' as type FROM instructor_folders WHERE instructor_id = $1 AND is_deleted = true";
+    const fileQuery = "SELECT *, 'file' as type FROM instructor_files WHERE instructor_id = $1 AND is_deleted = true";
+
+    const [folders, files] = await Promise.all([
+        pool.query(folderQuery, [instructor_id]),
+        pool.query(fileQuery, [instructor_id])
+    ]);
+
+    return [...folders.rows, ...files.rows].sort((a, b) => new Date(b.deleted_at) - new Date(a.deleted_at));
 };
 
 module.exports = {
@@ -65,5 +175,12 @@ module.exports = {
     uploadFile,
     getFiles,
     getStorageStats,
-    getRecentFiles
+    getRecentFiles,
+    getOrCreateUploadsFolder,
+    renameFolder,
+    renameFile,
+    softDeleteFolder,
+    softDeleteFile,
+    moveEntry,
+    getRecycleBin
 };

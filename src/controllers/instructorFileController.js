@@ -61,8 +61,75 @@ const uploadInstructorFile = async (req, res) => {
     }
 };
 
+const renameFolder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        const folder = await instructorFileService.renameFolder(id, name, req.user.id);
+        res.status(200).json({ success: true, data: folder });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const renameFile = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        const file = await instructorFileService.renameFile(id, name, req.user.id);
+        res.status(200).json({ success: true, data: file });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const deleteFolder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await instructorFileService.softDeleteFolder(id, req.user.id);
+        res.status(200).json({ success: true, message: "Folder moved to recycle bin" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const deleteFile = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await instructorFileService.softDeleteFile(id, req.user.id);
+        res.status(200).json({ success: true, message: "File moved to recycle bin" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const moveEntry = async (req, res) => {
+    try {
+        const { id, type, target_folder_id } = req.body;
+        const entry = await instructorFileService.moveEntry(id, type, target_folder_id, req.user.id);
+        res.status(200).json({ success: true, data: entry });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const getRecycleBin = async (req, res) => {
+    try {
+        const items = await instructorFileService.getRecycleBin(req.user.id);
+        res.status(200).json({ success: true, data: items });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     createFolder,
     getStorageContents,
-    uploadInstructorFile
+    uploadInstructorFile,
+    renameFolder,
+    renameFile,
+    deleteFolder,
+    deleteFile,
+    moveEntry,
+    getRecycleBin
 };

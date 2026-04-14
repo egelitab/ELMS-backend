@@ -34,7 +34,7 @@ exports.login = async (email, password) => {
   const accessToken = jwt.sign(
     { id: user.id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "24h" }
+    { expiresIn: "15d" }
   );
 
   // Remove sensitive fields before returning
