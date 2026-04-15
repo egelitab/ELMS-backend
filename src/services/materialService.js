@@ -26,9 +26,13 @@ const getMaterialsByCourse = async (course_id) => {
 
 const getInstructorMaterials = async (instructor_id) => {
   const query = `
-    SELECT *
+    SELECT id, course_id, title, description, file_path, file_type, file_size_bytes, uploaded_by, created_at, updated_at, is_deleted, 'material' as source
     FROM materials
-    WHERE uploaded_by = $1
+    WHERE uploaded_by = $1 AND is_deleted = false
+    UNION ALL
+    SELECT id, NULL as course_id, name as title, '' as description, file_path, file_type, file_size_bytes, instructor_id as uploaded_by, created_at, updated_at, is_deleted, 'storage' as source
+    FROM instructor_files
+    WHERE instructor_id = $1 AND is_deleted = false
     ORDER BY created_at DESC;
   `;
   const { rows } = await pool.query(query, [instructor_id]);
@@ -36,40 +40,42 @@ const getInstructorMaterials = async (instructor_id) => {
 };
 
 const deleteMaterial = async (id, instructor_id) => {
-  // First verify if the material belongs to a course the instructor owns
-  const checkQuery = `
-    SELECT m.file_path 
-    FROM materials m
-    JOIN courses c ON m.course_id = c.id
-    WHERE m.id = $1 AND c.instructor_id = $2
-  `;
-  const checkResult = await pool.query(checkQuery, [id, instructor_id]);
+  // Try to find in materials first
+  let query = "SELECT id, file_path FROM materials WHERE id = $1 AND uploaded_by = $2";
+  let { rows } = await pool.query(query, [id, instructor_id]);
 
-  if (checkResult.rows.length === 0) {
-    throw new Error("Unauthorized or material not found");
+  if (rows.length > 0) {
+    const filePath = rows[0].file_path;
+    await pool.query("UPDATE materials SET is_deleted = true, deleted_at = NOW() WHERE id = $1", [id]);
+    return filePath;
   }
 
-  const filePath = checkResult.rows[0].file_path;
+  // Try in instructor_files
+  query = "SELECT id, file_path FROM instructor_files WHERE id = $1 AND instructor_id = $2";
+  const { rows: files } = await pool.query(query, [id, instructor_id]);
+  if (files.length > 0) {
+    const filePath = files[0].file_path;
+    await pool.query("UPDATE instructor_files SET is_deleted = true, deleted_at = NOW() WHERE id = $1", [id]);
+    return filePath;
+  }
 
-  // Delete from DB
-  await pool.query("DELETE FROM materials WHERE id = $1", [id]);
-
-  return filePath;
+  throw new Error("Unauthorized or material not found");
 };
 
 const renameMaterial = async (id, instructor_id, new_title) => {
-  const checkQuery = `
-    SELECT m.id 
-    FROM materials m
-    WHERE m.id = $1 AND m.uploaded_by = $2
-  `;
-  const checkResult = await pool.query(checkQuery, [id, instructor_id]);
-  if (checkResult.rows.length === 0) {
+  // Try materials
+  let query = "UPDATE materials SET title = $1 WHERE id = $2 AND uploaded_by = $3 RETURNING *";
+  let { rows } = await pool.query(query, [new_title, id, instructor_id]);
+
+  if (rows.length === 0) {
+    // Try instructor_files
+    query = "UPDATE instructor_files SET name = $1 WHERE id = $2 AND instructor_id = $3 RETURNING *";
+    const result = await pool.query(query, [new_title, id, instructor_id]);
+    if (result.rows.length > 0) {
+      return { ...result.rows[0], title: result.rows[0].name };
+    }
     throw new Error("Unauthorized or material not found");
   }
-
-  const query = `UPDATE materials SET title = $1 WHERE id = $2 RETURNING *`;
-  const { rows } = await pool.query(query, [new_title, id]);
   return rows[0];
 };
 
