@@ -52,8 +52,8 @@ const getFolders = async (instructor_id, parent_id) => {
     }
 
     const query = parent_id
-        ? "SELECT * FROM instructor_folders WHERE instructor_id = $1 AND parent_id = $2 AND is_deleted = false ORDER BY name ASC"
-        : "SELECT * FROM instructor_folders WHERE instructor_id = $1 AND parent_id IS NULL AND is_deleted = false ORDER BY name ASC";
+        ? "SELECT * FROM instructor_folders WHERE instructor_id = $1 AND parent_id = $2 AND is_deleted = false ORDER BY created_at DESC"
+        : "SELECT * FROM instructor_folders WHERE instructor_id = $1 AND parent_id IS NULL AND is_deleted = false ORDER BY created_at DESC";
     const params = parent_id ? [instructor_id, parent_id] : [instructor_id];
     const { rows } = await pool.query(query, params);
     return rows;
@@ -96,10 +96,46 @@ const uploadFile = async ({ name, folder_id, instructor_id, file_path, file_type
 };
 
 const getFiles = async (instructor_id, folder_id) => {
-    const query = folder_id
-        ? "SELECT * FROM instructor_files WHERE instructor_id = $1 AND folder_id = $2 AND is_deleted = false ORDER BY created_at DESC"
-        : "SELECT * FROM instructor_files WHERE instructor_id = $1 AND folder_id IS NULL AND is_deleted = false ORDER BY created_at DESC";
-    const params = folder_id ? [instructor_id, folder_id] : [instructor_id];
+    let query;
+    let params;
+
+    const uploadsFolderId = await getOrCreateUploadsFolder(instructor_id);
+
+    if (folder_id) {
+        if (folder_id === uploadsFolderId) {
+            // In Uploads folder: show general uploads AND all course materials
+            query = `
+                SELECT id, name, folder_id, instructor_id, file_path, file_type, file_size_bytes, created_at, updated_at, is_deleted, 'storage' as source
+                FROM instructor_files 
+                WHERE instructor_id = $1 AND folder_id = $2 AND is_deleted = false
+                UNION ALL
+                SELECT m.id, m.title as name, $2 as folder_id, m.uploaded_by as instructor_id, m.file_path, m.file_type, m.file_size_bytes, m.created_at, m.updated_at, m.is_deleted, 'material' as source
+                FROM materials m
+                WHERE m.uploaded_by = $1 AND m.is_deleted = false
+                ORDER BY created_at DESC
+            `;
+            params = [instructor_id, folder_id];
+        } else {
+            // Other folder: just show regular files
+            query = `
+                SELECT id, name, folder_id, instructor_id, file_path, file_type, file_size_bytes, created_at, updated_at, is_deleted, 'storage' as source
+                FROM instructor_files 
+                WHERE instructor_id = $1 AND folder_id = $2 AND is_deleted = false
+                ORDER BY created_at DESC
+            `;
+            params = [instructor_id, folder_id];
+        }
+    } else {
+        // At root level: only show storage files with no folder_id
+        query = `
+            SELECT id, name, folder_id, instructor_id, file_path, file_type, file_size_bytes, created_at, updated_at, is_deleted, 'storage' as source
+            FROM instructor_files 
+            WHERE instructor_id = $1 AND folder_id IS NULL AND is_deleted = false
+            ORDER BY created_at DESC
+        `;
+        params = [instructor_id];
+    }
+
     const { rows } = await pool.query(query, params);
     return rows;
 };
@@ -116,8 +152,13 @@ const getStorageStats = async (instructor_id) => {
 
 const getRecentFiles = async (instructor_id) => {
     const query = `
-        SELECT * FROM instructor_files
+        SELECT id, name, folder_id, instructor_id, file_path, file_type, file_size_bytes, created_at, updated_at, is_deleted, 'storage' as source
+        FROM instructor_files
         WHERE instructor_id = $1 AND is_deleted = false
+        UNION ALL
+        SELECT m.id, m.title as name, NULL as folder_id, m.uploaded_by as instructor_id, m.file_path, m.file_type, m.file_size_bytes, m.created_at, m.updated_at, m.is_deleted, 'material' as source
+        FROM materials m
+        WHERE m.uploaded_by = $1 AND m.is_deleted = false
         ORDER BY created_at DESC
         LIMIT 10;
     `;
@@ -132,8 +173,16 @@ const renameFolder = async (id, name, instructor_id) => {
 };
 
 const renameFile = async (id, name, instructor_id) => {
-    const query = "UPDATE instructor_files SET name = $1 WHERE id = $2 AND instructor_id = $3 RETURNING *";
-    const { rows } = await pool.query(query, [name, id, instructor_id]);
+    // Try updating instructor_files first
+    let query = "UPDATE instructor_files SET name = $1 WHERE id = $2 AND instructor_id = $3 RETURNING *";
+    let { rows } = await pool.query(query, [name, id, instructor_id]);
+
+    if (rows.length === 0) {
+        // Try updating materials
+        query = "UPDATE materials SET title = $1 WHERE id = $2 AND uploaded_by = $3 RETURNING *";
+        const result = await pool.query(query, [name, id, instructor_id]);
+        return result.rows[0];
+    }
     return rows[0];
 };
 
@@ -144,8 +193,16 @@ const softDeleteFolder = async (id, instructor_id) => {
 };
 
 const softDeleteFile = async (id, instructor_id) => {
-    const query = "UPDATE instructor_files SET is_deleted = true, deleted_at = NOW() WHERE id = $1 AND instructor_id = $2 RETURNING *";
-    const { rows } = await pool.query(query, [id, instructor_id]);
+    // Try updating instructor_files first
+    let query = "UPDATE instructor_files SET is_deleted = true, deleted_at = NOW() WHERE id = $1 AND instructor_id = $2 RETURNING *";
+    let { rows } = await pool.query(query, [id, instructor_id]);
+
+    if (rows.length === 0) {
+        // Try updating materials
+        query = "UPDATE materials SET is_deleted = true, deleted_at = NOW() WHERE id = $1 AND uploaded_by = $2 RETURNING *";
+        const result = await pool.query(query, [id, instructor_id]);
+        return result.rows[0];
+    }
     return rows[0];
 };
 
