@@ -16,6 +16,7 @@ const departmentRoutes = require("./routes/departmentRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
 const instructorFileRoutes = require("./routes/instructorFileRoutes");
+const systemRoutes = require("./routes/systemRoutes");
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/instructor-files", instructorFileRoutes);
+app.use("/api/system", systemRoutes);
 
 // Health check route
 app.get("/", (req, res) => {
