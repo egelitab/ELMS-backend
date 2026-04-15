@@ -3,9 +3,11 @@ const bcrypt = require("bcrypt");
 
 exports.getAllUsers = async () => {
     const result = await pool.query(`
-    SELECT u.id, u.institutional_id, u.title, u.first_name, u.middle_name, u.last_name, u.email, u.role, u.is_active, d.name as department_name, u.department_id 
+    SELECT u.id, u.institutional_id, u.title, u.first_name, u.middle_name, u.last_name, u.email, u.role, u.is_active, 
+           u.year, u.section, d.name as department_name, f.name as faculty_name, u.department_id 
     FROM users u
     LEFT JOIN departments d ON u.department_id = d.id
+    LEFT JOIN faculties f ON d.faculty_id = f.id
     ORDER BY u.created_at DESC
   `);
     return result.rows;
