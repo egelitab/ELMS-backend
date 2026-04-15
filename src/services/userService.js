@@ -55,3 +55,22 @@ exports.deleteUser = async (id) => {
     if (result.rows.length === 0) throw new Error("User not found");
     return result.rows[0];
 };
+
+exports.updateUser = async (id, data) => {
+    const { title, first_name, middle_name, last_name, email } = data;
+
+    const result = await pool.query(
+        `UPDATE users 
+         SET title = COALESCE($1, title), 
+             first_name = COALESCE($2, first_name), 
+             middle_name = COALESCE($3, middle_name), 
+             last_name = COALESCE($4, last_name), 
+             email = COALESCE($5, email)
+         WHERE id = $6 
+         RETURNING id, title, first_name, middle_name, last_name, email, role, department_id`,
+        [title, first_name, middle_name, last_name, email, id]
+    );
+
+    if (result.rows.length === 0) throw new Error("User not found");
+    return result.rows[0];
+};

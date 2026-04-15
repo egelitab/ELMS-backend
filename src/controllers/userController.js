@@ -38,3 +38,13 @@ exports.deleteUser = async (req, res) => {
         res.status(400).json({ success: false, message: err.message });
     }
 };
+
+exports.updateMe = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const updatedUser = await userService.updateUser(userId, req.body);
+        res.json({ success: true, data: updatedUser });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
