@@ -43,8 +43,14 @@ const getFolders = async (instructor_id, parent_id) => {
     }
 
     const query = parent_id
-        ? "SELECT id, title as name, parent_id, created_at FROM materials WHERE uploaded_by = $1 AND parent_id = $2 AND type = 'folder' AND is_deleted = false ORDER BY created_at DESC"
-        : "SELECT id, title as name, parent_id, created_at FROM materials WHERE uploaded_by = $1 AND parent_id IS NULL AND type = 'folder' AND is_deleted = false ORDER BY created_at DESC";
+        ? `SELECT m.id, m.title as name, m.parent_id, m.created_at, 
+           (SELECT COUNT(*)::int FROM materials c WHERE c.parent_id = m.id AND c.is_deleted = false) as item_count 
+           FROM materials m WHERE m.uploaded_by = $1 AND m.parent_id = $2 AND m.type = 'folder' AND m.is_deleted = false 
+           ORDER BY m.created_at DESC`
+        : `SELECT m.id, m.title as name, m.parent_id, m.created_at, 
+           (SELECT COUNT(*)::int FROM materials c WHERE c.parent_id = m.id AND c.is_deleted = false) as item_count 
+           FROM materials m WHERE m.uploaded_by = $1 AND m.parent_id IS NULL AND m.type = 'folder' AND m.is_deleted = false 
+           ORDER BY m.created_at DESC`;
     const params = parent_id ? [instructor_id, parent_id] : [instructor_id];
     const { rows } = await pool.query(query, params);
     return rows;
