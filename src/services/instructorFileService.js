@@ -190,8 +190,7 @@ const duplicateEntry = async (id, type, targetFolderId, instructor_id, newName) 
             instructor_id,
             source.file_path,
             source.file_type,
-            source.file_size_bytes,
-            'file'
+            source.file_size_bytes
         ]);
         return rows[0];
     }
