@@ -1,28 +1,34 @@
 const pool = require("../config/db");
 
 const uploadMaterial = async ({ course_id, title, description, file_path, file_type, file_size_bytes, uploaded_by }) => {
-  // Ensure the material is placed in the 'Uploads' system folder in the unified table
+  // Now uploads are private by default in Uploads folder
   const instructorFileService = require("./instructorFileService");
   const uploadsFolderId = await instructorFileService.getOrCreateUploadsFolder(uploaded_by);
 
   const query = `
-    INSERT INTO materials (course_id, title, description, file_path, file_type, file_size_bytes, uploaded_by, type, parent_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, 'file', $8)
+    INSERT INTO materials (title, description, file_path, file_type, file_size_bytes, uploaded_by, type, parent_id)
+    VALUES ($1, $2, $3, $4, $5, $6, 'file', $7)
     RETURNING *;
   `;
-
-  const values = [course_id, title, description, file_path, file_type, file_size_bytes, uploaded_by, uploadsFolderId];
-
+  const values = [title, description, file_path, file_type, file_size_bytes, uploaded_by, uploadsFolderId];
   const { rows } = await pool.query(query, values);
-  return rows[0];
+  const material = rows[0];
+
+  // If course_id is provided during upload (legacy or shortcut), share it immediately
+  if (course_id) {
+    await shareMaterials([material.id], course_id, null, null);
+  }
+
+  return material;
 };
 
 const getMaterialsByCourse = async (course_id) => {
   const query = `
-    SELECT id, title, description, file_path, file_type, file_size_bytes, created_at
-    FROM materials
-    WHERE course_id = $1
-    ORDER BY created_at DESC;
+    SELECT m.id, m.title, m.description, m.file_path, m.file_type, m.file_size_bytes, m.created_at
+    FROM materials m
+    JOIN material_shares ms ON m.id = ms.material_id
+    WHERE ms.course_id = $1 AND m.is_deleted = false
+    ORDER BY m.created_at DESC;
   `;
   const { rows } = await pool.query(query, [course_id]);
   return rows;
@@ -30,11 +36,11 @@ const getMaterialsByCourse = async (course_id) => {
 
 const getInstructorMaterials = async (instructor_id) => {
   const query = `
-    SELECT id, course_id, title, description, file_path, file_type, file_size_bytes, uploaded_by, created_at, updated_at, is_deleted,
-    CASE WHEN course_id IS NOT NULL THEN 'material' ELSE 'storage' END as source
-    FROM materials
-    WHERE uploaded_by = $1 AND is_deleted = false AND type = 'file'
-    ORDER BY created_at DESC;
+    SELECT m.id, m.title, m.description, m.file_path, m.file_type, m.file_size_bytes, m.uploaded_by, m.created_at, m.updated_at, m.is_deleted,
+    CASE WHEN EXISTS (SELECT 1 FROM material_shares ms WHERE ms.material_id = m.id) THEN 'shared' ELSE 'storage' END as source
+    FROM materials m
+    WHERE m.uploaded_by = $1 AND m.is_deleted = false AND m.type = 'file'
+    ORDER BY m.created_at DESC;
   `;
   const { rows } = await pool.query(query, [instructor_id]);
   return rows;
@@ -63,15 +69,15 @@ const renameMaterial = async (id, instructor_id, new_title) => {
   return rows[0];
 };
 
-const shareMaterials = async (material_ids, department_id, section) => {
+const shareMaterials = async (material_ids, course_id, department_id, section) => {
   const values = [];
-  let queryText = "INSERT INTO material_shares (material_id, department_id, section) VALUES ";
+  let queryText = "INSERT INTO material_shares (material_id, course_id, department_id, section) VALUES ";
   let paramIndex = 1;
   const placeholders = [];
 
   for (const mid of material_ids) {
-    placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
-    values.push(mid, department_id, section || null);
+    placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+    values.push(mid, course_id || null, department_id || null, section || null);
   }
 
   queryText += placeholders.join(", ");

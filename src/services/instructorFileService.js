@@ -83,7 +83,7 @@ const getFiles = async (instructor_id, folder_id) => {
     if (folder_id) {
         query = `
             SELECT id, title as name, parent_id as folder_id, uploaded_by as instructor_id, file_path, file_type, file_size_bytes, created_at, updated_at, is_deleted, 
-            CASE WHEN course_id IS NOT NULL THEN 'material' ELSE 'storage' END as source
+            CASE WHEN EXISTS (SELECT 1 FROM material_shares ms WHERE ms.material_id = materials.id) THEN 'material' ELSE 'storage' END as source
             FROM materials 
             WHERE uploaded_by = $1 AND parent_id = $2 AND type = 'file' AND is_deleted = false
             ORDER BY created_at DESC
@@ -116,7 +116,7 @@ const getStorageStats = async (instructor_id) => {
 const getRecentFiles = async (instructor_id) => {
     const query = `
         SELECT id, title as name, parent_id as folder_id, uploaded_by as instructor_id, file_path, file_type, file_size_bytes, created_at, updated_at, is_deleted,
-        CASE WHEN course_id IS NOT NULL THEN 'material' ELSE 'storage' END as source
+        CASE WHEN EXISTS (SELECT 1 FROM material_shares ms WHERE ms.material_id = materials.id) THEN 'material' ELSE 'storage' END as source
         FROM materials
         WHERE uploaded_by = $1 AND type = 'file' AND is_deleted = false
         ORDER BY created_at DESC

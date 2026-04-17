@@ -92,12 +92,16 @@ const renameMaterial = async (req, res) => {
 
 const shareMaterials = async (req, res) => {
     try {
-        const { material_ids, department_id, section } = req.body;
-        if (!material_ids || material_ids.length === 0 || !department_id) {
-            return res.status(400).json({ success: false, message: "Materials and Department are required" });
+        const { material_ids, course_id, department_id, section } = req.body;
+        if (!material_ids || material_ids.length === 0) {
+            return res.status(400).json({ success: false, message: "Materials are required" });
         }
 
-        await materialService.shareMaterials(material_ids, department_id, section);
+        if (!course_id && !department_id) {
+            return res.status(400).json({ success: false, message: "Either Course or Department is required for sharing" });
+        }
+
+        await materialService.shareMaterials(material_ids, course_id, department_id, section);
         res.json({ success: true, message: "Materials shared successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
