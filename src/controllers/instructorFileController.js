@@ -113,6 +113,16 @@ const moveEntry = async (req, res) => {
     }
 };
 
+const duplicateEntry = async (req, res) => {
+    try {
+        const { id, type, target_folder_id, new_name } = req.body;
+        const entry = await instructorFileService.duplicateEntry(id, type, target_folder_id, req.user.id, new_name);
+        res.status(201).json({ success: true, data: entry });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 const getRecycleBin = async (req, res) => {
     try {
         const items = await instructorFileService.getRecycleBin(req.user.id);
@@ -141,6 +151,7 @@ module.exports = {
     deleteFolder,
     deleteFile,
     moveEntry,
+    duplicateEntry,
     getRecycleBin,
     restoreEntry
 };
