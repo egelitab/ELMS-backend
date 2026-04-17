@@ -226,6 +226,21 @@ const getRecycleBin = async (instructor_id) => {
     return [...folders.rows, ...files.rows].sort((a, b) => new Date(b.deleted_at) - new Date(a.deleted_at));
 };
 
+const restoreEntry = async (id, type, instructor_id) => {
+    const table = type === 'folder' ? 'instructor_folders' : 'instructor_files';
+    const query = `UPDATE ${table} SET is_deleted = false, deleted_at = NULL WHERE id = $1 AND instructor_id = $2 RETURNING *`;
+    const { rows } = await pool.query(query, [id, instructor_id]);
+
+    // If not found in regular files, try materials if it's a file
+    if (rows.length === 0 && type === 'file') {
+        const matQuery = "UPDATE materials SET is_deleted = false, deleted_at = NULL WHERE id = $1 AND uploaded_by = $2 RETURNING *";
+        const result = await pool.query(matQuery, [id, instructor_id]);
+        return result.rows[0];
+    }
+
+    return rows[0];
+};
+
 module.exports = {
     createFolder,
     getFolders,
@@ -239,5 +254,6 @@ module.exports = {
     softDeleteFolder,
     softDeleteFile,
     moveEntry,
-    getRecycleBin
+    getRecycleBin,
+    restoreEntry
 };

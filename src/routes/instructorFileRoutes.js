@@ -13,6 +13,7 @@ router.patch("/file/:id/rename", verifyToken(), authorizeRoles("instructor"), in
 router.delete("/folder/:id", verifyToken(), authorizeRoles("instructor"), instructorFileController.deleteFolder);
 router.delete("/file/:id", verifyToken(), authorizeRoles("instructor"), instructorFileController.deleteFile);
 router.patch("/move", verifyToken(), authorizeRoles("instructor"), instructorFileController.moveEntry);
+router.patch("/restore", verifyToken(), authorizeRoles("instructor"), instructorFileController.restoreEntry);
 router.get("/recycle-bin", verifyToken(), authorizeRoles("instructor"), instructorFileController.getRecycleBin);
 
 module.exports = router;

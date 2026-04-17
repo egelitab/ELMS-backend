@@ -122,6 +122,16 @@ const getRecycleBin = async (req, res) => {
     }
 };
 
+const restoreEntry = async (req, res) => {
+    try {
+        const { id, type } = req.body;
+        const item = await instructorFileService.restoreEntry(id, type, req.user.id);
+        res.status(200).json({ success: true, data: item, message: "Item restored successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     createFolder,
     getStorageContents,
@@ -131,5 +141,6 @@ module.exports = {
     deleteFolder,
     deleteFile,
     moveEntry,
-    getRecycleBin
+    getRecycleBin,
+    restoreEntry
 };
