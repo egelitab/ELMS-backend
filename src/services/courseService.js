@@ -1,20 +1,61 @@
 const pool = require("../config/db");
 
-const createCourse = async ({ course_code, title, description, instructor_id, department_id }) => {
+const createCourse = async ({ course_code, title, description, instructor_id, department_id, year, semester }) => {
   const query = `
-    INSERT INTO courses (course_code, title, description, instructor_id, department_id)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO courses (course_code, title, description, instructor_id, department_id, year, semester)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *;
   `;
 
-  const values = [course_code, title, description, instructor_id, department_id];
+  const values = [course_code, title, description, instructor_id, department_id, year, semester];
 
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
-const getAllCourses = async () => {
-  const { rows } = await pool.query("SELECT * FROM courses");
+const getAllCourses = async (filters = {}) => {
+  let query = `
+    SELECT c.*, d.name as department_name, f.name as faculty_name, i.name as institution_name,
+           u.first_name || ' ' || u.last_name as instructor_name
+    FROM courses c
+    JOIN departments d ON c.department_id = d.id
+    JOIN faculties f ON d.faculty_id = f.id
+    JOIN institutions i ON f.institution_id = i.id
+    LEFT JOIN users u ON c.instructor_id = u.id
+    WHERE 1=1
+  `;
+  const values = [];
+  let paramCount = 1;
+
+  if (filters.department_id) {
+    query += ` AND c.department_id = $${paramCount++}`;
+    values.push(filters.department_id);
+  }
+  if (filters.faculty_id) {
+    query += ` AND d.faculty_id = $${paramCount++}`;
+    values.push(filters.faculty_id);
+  }
+  if (filters.institution_id) {
+    query += ` AND f.institution_id = $${paramCount++}`;
+    values.push(filters.institution_id);
+  }
+  if (filters.year) {
+    query += ` AND c.year = $${paramCount++}`;
+    values.push(filters.year);
+  }
+  if (filters.semester) {
+    query += ` AND c.semester = $${paramCount++}`;
+    values.push(filters.semester);
+  }
+  if (filters.search) {
+    query += ` AND (c.title ILIKE $${paramCount} OR c.course_code ILIKE $${paramCount})`;
+    values.push(`%${filters.search}%`);
+    paramCount++;
+  }
+
+  query += " ORDER BY c.created_at DESC";
+
+  const { rows } = await pool.query(query, values);
   return rows;
 };
 

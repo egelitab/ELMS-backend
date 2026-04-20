@@ -2,7 +2,7 @@ const courseService = require("../services/courseService");
 
 const createCourse = async (req, res) => {
   try {
-    const { course_code, title, description, department_id } = req.body;
+    const { course_code, title, description, department_id, instructor_id, year, semester } = req.body;
 
     if (!course_code || !title) {
       return res.status(400).json({
@@ -11,14 +11,18 @@ const createCourse = async (req, res) => {
       });
     }
 
-    const instructor_id = req.user.id; // from JWT middleware
+    // If an admin is creating the course, they might provide an instructor_id.
+    // Otherwise, use the ID of the person making the request.
+    const final_instructor_id = instructor_id || req.user.id;
 
     const course = await courseService.createCourse({
       course_code,
       title,
       description,
-      instructor_id,
+      instructor_id: final_instructor_id,
       department_id,
+      year,
+      semester
     });
 
     res.status(201).json({
@@ -35,7 +39,15 @@ const createCourse = async (req, res) => {
 
 const getAllCourses = async (req, res) => {
   try {
-    const courses = await courseService.getAllCourses();
+    const filters = {
+      department_id: req.query.department_id,
+      faculty_id: req.query.faculty_id,
+      institution_id: req.query.institution_id,
+      year: req.query.year,
+      semester: req.query.semester,
+      search: req.query.search
+    };
+    const courses = await courseService.getAllCourses(filters);
     res.json({
       success: true,
       data: courses,

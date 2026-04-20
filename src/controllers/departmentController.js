@@ -26,3 +26,12 @@ exports.addDepartment = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+exports.getAllInstitutions = async (req, res) => {
+    try {
+        const institutions = await departmentService.getAllInstitutions();
+        res.json({ success: true, data: institutions });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};

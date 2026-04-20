@@ -28,3 +28,12 @@ exports.addDepartment = async (departmentData) => {
   `, [name, faculty_id]);
   return result.rows[0];
 };
+
+exports.getAllInstitutions = async () => {
+  const result = await pool.query(`
+    SELECT id, name
+    FROM institutions
+    ORDER BY name ASC
+  `);
+  return result.rows;
+};
