@@ -45,7 +45,8 @@ const getAllCourses = async (req, res) => {
       institution_id: req.query.institution_id,
       year: req.query.year,
       semester: req.query.semester,
-      search: req.query.search
+      search: req.query.search,
+      sort: req.query.sort
     };
     const courses = await courseService.getAllCourses(filters);
     res.json({

@@ -53,7 +53,12 @@ const getAllCourses = async (filters = {}) => {
     paramCount++;
   }
 
-  query += " ORDER BY c.created_at DESC";
+  let orderBy = 'c.created_at DESC';
+  if (filters.sort === 'code') orderBy = 'c.course_code ASC';
+  else if (filters.sort === 'title') orderBy = 'c.title ASC';
+  else if (filters.sort === 'newest') orderBy = 'c.created_at DESC';
+
+  query += ` ORDER BY ${orderBy}`;
 
   const { rows } = await pool.query(query, values);
   return rows;
