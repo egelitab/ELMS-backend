@@ -56,12 +56,24 @@ CREATE TABLE IF NOT EXISTS courses (
     course_code VARCHAR(50) UNIQUE NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    course_guide_url VARCHAR(500), -- Path to the PDF guide
     instructor_id UUID REFERENCES users(id) ON DELETE RESTRICT,
     department_id UUID REFERENCES departments(id) ON DELETE RESTRICT,
     year INT,
     semester INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3.5 Course Chapters Table
+CREATE TABLE IF NOT EXISTS course_chapters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    order_index INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(course_id, order_index)
 );
 
 -- 4. Enrollments (Students -> Courses)
@@ -77,6 +89,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
 CREATE TABLE IF NOT EXISTS materials (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+    chapter_id UUID REFERENCES course_chapters(id) ON DELETE SET NULL, -- Material linked to a chapter
     title VARCHAR(255) NOT NULL,
     description TEXT,
     file_path VARCHAR(500) NOT NULL, -- Logical path on local filesystem
@@ -85,6 +98,18 @@ CREATE TABLE IF NOT EXISTS materials (
     uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5.5 Material Shares (Distribution targeting)
+CREATE TABLE IF NOT EXISTS material_shares (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    material_id UUID REFERENCES materials(id) ON DELETE CASCADE,
+    course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+    chapter_id UUID REFERENCES course_chapters(id) ON DELETE SET NULL,
+    department_id UUID REFERENCES departments(id) ON DELETE CASCADE,
+    section VARCHAR(50), -- Optional: target specific section
+    shared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(material_id, course_id, chapter_id, department_id, section)
 );
 
 -- 6. Assignments

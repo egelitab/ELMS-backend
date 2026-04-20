@@ -22,15 +22,23 @@ const uploadMaterial = async ({ course_id, title, description, file_path, file_t
   return material;
 };
 
-const getMaterialsByCourse = async (course_id) => {
-  const query = `
-    SELECT m.id, m.title, m.description, m.file_path, m.file_type, m.file_size_bytes, m.created_at
+const getMaterialsByCourse = async (course_id, chapter_id = null) => {
+  let query = `
+    SELECT m.id, m.title, m.description, m.file_path, m.file_type, m.file_size_bytes, m.created_at, ms.chapter_id
     FROM materials m
     JOIN material_shares ms ON m.id = ms.material_id
-    WHERE ms.course_id = $1 AND m.is_deleted = false
-    ORDER BY m.created_at DESC;
+    WHERE ms.course_id = $1
   `;
-  const { rows } = await pool.query(query, [course_id]);
+  const values = [course_id];
+
+  if (chapter_id) {
+    query += " AND ms.chapter_id = $2";
+    values.push(chapter_id);
+  }
+
+  query += " ORDER BY m.created_at DESC";
+
+  const { rows } = await pool.query(query, values);
   return rows;
 };
 
@@ -39,7 +47,7 @@ const getInstructorMaterials = async (instructor_id) => {
     SELECT m.id, m.title, m.description, m.file_path, m.file_type, m.file_size_bytes, m.uploaded_by, m.created_at, m.updated_at, m.is_deleted,
     CASE WHEN EXISTS (SELECT 1 FROM material_shares ms WHERE ms.material_id = m.id) THEN 'shared' ELSE 'storage' END as source
     FROM materials m
-    WHERE m.uploaded_by = $1 AND m.is_deleted = false AND m.type = 'file'
+    WHERE m.uploaded_by = $1 AND m.type = 'file'
     ORDER BY m.created_at DESC;
   `;
   const { rows } = await pool.query(query, [instructor_id]);
@@ -52,7 +60,7 @@ const deleteMaterial = async (id, instructor_id) => {
 
   if (rows.length > 0) {
     const filePath = rows[0].file_path;
-    await pool.query("UPDATE materials SET is_deleted = true, deleted_at = NOW() WHERE id = $1", [id]);
+    await pool.query("DELETE FROM materials WHERE id = $1", [id]);
     return filePath;
   }
 
@@ -69,18 +77,19 @@ const renameMaterial = async (id, instructor_id, new_title) => {
   return rows[0];
 };
 
-const shareMaterials = async (material_ids, course_id, department_id, section) => {
+const shareMaterials = async (material_ids, course_id, department_id, section, chapter_id = null) => {
   const values = [];
-  let queryText = "INSERT INTO material_shares (material_id, course_id, department_id, section) VALUES ";
+  let queryText = "INSERT INTO material_shares (material_id, course_id, department_id, section, chapter_id) VALUES ";
   let paramIndex = 1;
   const placeholders = [];
 
   for (const mid of material_ids) {
-    placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
-    values.push(mid, course_id || null, department_id || null, section || null);
+    placeholders.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+    values.push(mid, course_id || null, department_id || null, section || null, chapter_id || null);
   }
 
   queryText += placeholders.join(", ");
+  queryText += " ON CONFLICT DO NOTHING";
 
   await pool.query(queryText, values);
 };

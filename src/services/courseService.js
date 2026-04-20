@@ -13,6 +13,28 @@ const createCourse = async ({ course_code, title, description, instructor_id, de
   return rows[0];
 };
 
+const updateCourseGuide = async (courseId, guideUrl) => {
+  const query = "UPDATE courses SET course_guide_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *";
+  const { rows } = await pool.query(query, [guideUrl, courseId]);
+  return rows[0];
+};
+
+const addChapter = async (courseId, title, orderIndex) => {
+  const query = `
+    INSERT INTO course_chapters (course_id, title, order_index)
+    VALUES ($1, $2, $3)
+    RETURNING *;
+  `;
+  const { rows } = await pool.query(query, [courseId, title, orderIndex]);
+  return rows[0];
+};
+
+const getCourseChapters = async (courseId) => {
+  const query = "SELECT * FROM course_chapters WHERE course_id = $1 ORDER BY order_index ASC";
+  const { rows } = await pool.query(query, [courseId]);
+  return rows;
+};
+
 const getAllCourses = async (filters = {}) => {
   let query = `
     SELECT c.*, d.name as department_name, f.name as faculty_name, i.name as institution_name,
@@ -126,4 +148,7 @@ module.exports = {
   getInstructorCourses,
   getInstructorTargets,
   getCourseEnrollmentStats,
+  updateCourseGuide,
+  addChapter,
+  getCourseChapters,
 };

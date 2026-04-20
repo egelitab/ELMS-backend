@@ -31,10 +31,37 @@ router.get(
   courseController.getInstructorTargets
 );
 
+const upload = require("../middleware/uploadMiddleware");
+
+// ... existing routes ...
+
 router.get(
   "/:courseId/enrollment-stats",
   verifyToken(),
   courseController.getCourseEnrollmentStats
+);
+
+// Course Guide (PDF)
+router.put(
+  "/:courseId/guide",
+  verifyToken(),
+  authorizeRoles("admin"),
+  upload.single("guide"),
+  courseController.uploadCourseGuide
+);
+
+// Chapters
+router.get(
+  "/:courseId/chapters",
+  verifyToken(),
+  courseController.getCourseChapters
+);
+
+router.post(
+  "/:courseId/chapters",
+  verifyToken(),
+  authorizeRoles("admin"),
+  courseController.addCourseChapter
 );
 
 module.exports = router;

@@ -109,10 +109,65 @@ const getCourseEnrollmentStats = async (req, res) => {
   }
 };
 
+const uploadCourseGuide = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No PDF file uploaded" });
+    }
+
+    const guideUrl = `/uploads/${req.file.filename}`;
+    const course = await courseService.updateCourseGuide(courseId, guideUrl);
+
+    res.json({
+      success: true,
+      data: course
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getCourseChapters = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const chapters = await courseService.getCourseChapters(courseId);
+    res.json({
+      success: true,
+      data: chapters
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const addCourseChapter = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { title, order_index } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ success: false, message: "Chapter title is required" });
+    }
+
+    const chapter = await courseService.addChapter(courseId, title, order_index || 0);
+
+    res.status(201).json({
+      success: true,
+      data: chapter
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
   getInstructorCourses,
   getInstructorTargets,
   getCourseEnrollmentStats,
+  uploadCourseGuide,
+  getCourseChapters,
+  addCourseChapter,
 };

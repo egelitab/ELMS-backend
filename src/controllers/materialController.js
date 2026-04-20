@@ -43,7 +43,8 @@ const uploadMaterial = async (req, res) => {
 const getMaterialsByCourse = async (req, res) => {
     try {
         const { courseId } = req.params;
-        const materials = await materialService.getMaterialsByCourse(courseId);
+        const { chapter_id } = req.query;
+        const materials = await materialService.getMaterialsByCourse(courseId, chapter_id);
         res.json({ success: true, data: materials });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -92,7 +93,7 @@ const renameMaterial = async (req, res) => {
 
 const shareMaterials = async (req, res) => {
     try {
-        const { material_ids, course_id, department_id, section } = req.body;
+        const { material_ids, course_id, department_id, section, chapter_id } = req.body;
         if (!material_ids || material_ids.length === 0) {
             return res.status(400).json({ success: false, message: "Materials are required" });
         }
@@ -101,7 +102,7 @@ const shareMaterials = async (req, res) => {
             return res.status(400).json({ success: false, message: "Either Course or Department is required for sharing" });
         }
 
-        await materialService.shareMaterials(material_ids, course_id, department_id, section);
+        await materialService.shareMaterials(material_ids, course_id, department_id, section, chapter_id);
         res.json({ success: true, message: "Materials shared successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
