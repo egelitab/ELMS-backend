@@ -31,6 +31,14 @@ router.get(
   courseController.getInstructorTargets
 );
 
+// Student-specific courses
+router.get(
+  "/student",
+  verifyToken(),
+  authorizeRoles("student"),
+  courseController.getStudentCourses
+);
+
 const upload = require("../middleware/uploadMiddleware");
 
 // ... existing routes ...

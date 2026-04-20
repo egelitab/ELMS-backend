@@ -161,10 +161,27 @@ const addCourseChapter = async (req, res) => {
   }
 };
 
+const getStudentCourses = async (req, res) => {
+  try {
+    const student_id = req.user.id;
+    const courses = await courseService.getStudentCourses(student_id);
+    res.json({
+      success: true,
+      data: courses,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 module.exports = {
   createCourse,
   getAllCourses,
   getInstructorCourses,
+  getStudentCourses,
   getInstructorTargets,
   getCourseEnrollmentStats,
   uploadCourseGuide,
