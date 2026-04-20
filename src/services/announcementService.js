@@ -29,7 +29,7 @@ const getStudentAnnouncements = async (student_id) => {
         JOIN courses c ON a.course_id = c.id
         JOIN enrollments e ON e.course_id = c.id
         LEFT JOIN users u ON a.posted_by = u.id
-        WHERE e.user_id = $1
+        WHERE e.student_id = $1
         ORDER BY a.created_at DESC;
     `;
     const { rows } = await pool.query(query, [student_id]);
