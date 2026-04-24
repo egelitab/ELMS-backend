@@ -109,11 +109,29 @@ const shareMaterials = async (req, res) => {
     }
 };
 
+const unshareMaterials = async (req, res) => {
+    try {
+        const { material_ids, course_id } = req.body;
+        if (!material_ids || material_ids.length === 0) {
+            return res.status(400).json({ success: false, message: "Materials are required" });
+        }
+        if (!course_id) {
+            return res.status(400).json({ success: false, message: "Course ID is required" });
+        }
+
+        await materialService.unshareMaterials(material_ids, course_id);
+        res.json({ success: true, message: "Materials unshared successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     uploadMaterial,
     getMaterialsByCourse,
     getInstructorMaterials,
     deleteMaterial,
     renameMaterial,
-    shareMaterials
+    shareMaterials,
+    unshareMaterials
 };

@@ -49,4 +49,12 @@ router.post(
     materialController.shareMaterials
 );
 
+// Instructors can unshare their materials
+router.post(
+    "/unshare",
+    verifyToken(),
+    authorizeRoles("instructor"),
+    materialController.unshareMaterials
+);
+
 module.exports = router;

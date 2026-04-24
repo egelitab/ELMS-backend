@@ -94,6 +94,11 @@ const shareMaterials = async (material_ids, course_id, department_id, section, c
   await pool.query(queryText, values);
 };
 
+const unshareMaterials = async (material_ids, course_id) => {
+  const queryText = "DELETE FROM material_shares WHERE course_id = $1 AND material_id = ANY($2)";
+  await pool.query(queryText, [course_id, material_ids]);
+};
+
 module.exports = {
   uploadMaterial,
   getMaterialsByCourse,
@@ -101,4 +106,5 @@ module.exports = {
   deleteMaterial,
   renameMaterial,
   shareMaterials,
+  unshareMaterials,
 };
