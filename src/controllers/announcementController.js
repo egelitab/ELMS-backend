@@ -11,6 +11,27 @@ const createAnnouncement = async (req, res) => {
     }
 };
 
+const updateAnnouncement = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, content, section, attachments } = req.body;
+        const announcement = await announcementService.updateAnnouncement(id, { title, content, section, attachments });
+        res.status(200).json({ success: true, data: announcement });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const deleteAnnouncement = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await announcementService.deleteAnnouncement(id);
+        res.status(200).json({ success: true, message: "Announcement deleted" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 const getInstructorAnnouncements = async (req, res) => {
     try {
         const instructor_id = req.user.id;
@@ -33,6 +54,8 @@ const getStudentAnnouncements = async (req, res) => {
 
 module.exports = {
     createAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
     getInstructorAnnouncements,
     getStudentAnnouncements
 };

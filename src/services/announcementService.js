@@ -10,6 +10,22 @@ const createAnnouncement = async ({ course_id, title, content, posted_by, sectio
     return rows[0];
 };
 
+const updateAnnouncement = async (id, { title, content, section, attachments }) => {
+    const query = `
+        UPDATE announcements
+        SET title = $1, content = $2, section = $3, attachments = $4, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $5
+        RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [title, content, section || null, JSON.stringify(attachments || []), id]);
+    return rows[0];
+};
+
+const deleteAnnouncement = async (id) => {
+    const query = 'DELETE FROM announcements WHERE id = $1';
+    await pool.query(query, [id]);
+};
+
 const getInstructorAnnouncements = async (instructor_id) => {
     const query = `
         SELECT a.*, c.title as course_title, c.course_code
@@ -54,6 +70,8 @@ const getStudentAnnouncements = async (student_id) => {
 
 module.exports = {
     createAnnouncement,
+    updateAnnouncement,
+    deleteAnnouncement,
     getInstructorAnnouncements,
     getStudentAnnouncements
 };
