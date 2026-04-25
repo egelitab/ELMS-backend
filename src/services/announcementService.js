@@ -1,12 +1,12 @@
 const pool = require("../config/db");
 
-const createAnnouncement = async ({ course_id, title, content, posted_by }) => {
+const createAnnouncement = async ({ course_id, title, content, posted_by, section, attachments }) => {
     const query = `
-        INSERT INTO announcements (course_id, title, content, posted_by)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO announcements (course_id, title, content, posted_by, section, attachments)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *;
     `;
-    const { rows } = await pool.query(query, [course_id, title, content, posted_by]);
+    const { rows } = await pool.query(query, [course_id, title, content, posted_by, section || null, JSON.stringify(attachments || [])]);
     return rows[0];
 };
 
@@ -19,6 +19,14 @@ const getInstructorAnnouncements = async (instructor_id) => {
         ORDER BY a.created_at DESC;
     `;
     const { rows } = await pool.query(query, [instructor_id]);
+
+    // Enrich with file info
+    for (const r of rows) {
+        if (r.attachments && r.attachments.length > 0) {
+            const { rows: files } = await pool.query("SELECT id, name, file_path, file_type FROM instructor_files WHERE id = ANY($1)", [r.attachments]);
+            r.attachment_details = files;
+        }
+    }
     return rows;
 };
 
@@ -28,11 +36,19 @@ const getStudentAnnouncements = async (student_id) => {
         FROM announcements a
         JOIN courses c ON a.course_id = c.id
         JOIN enrollments e ON e.course_id = c.id
+        JOIN users s ON e.student_id = s.id
         LEFT JOIN users u ON a.posted_by = u.id
-        WHERE e.student_id = $1
+        WHERE e.student_id = $1 AND (a.section IS NULL OR a.section = s.section)
         ORDER BY a.created_at DESC;
     `;
     const { rows } = await pool.query(query, [student_id]);
+
+    for (const r of rows) {
+        if (r.attachments && r.attachments.length > 0) {
+            const { rows: files } = await pool.query("SELECT id, name, file_path, file_type FROM instructor_files WHERE id = ANY($1)", [r.attachments]);
+            r.attachment_details = files;
+        }
+    }
     return rows;
 };
 
