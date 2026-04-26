@@ -191,9 +191,24 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 12. Schedules Table
+CREATE TABLE IF NOT EXISTS schedules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type VARCHAR(50) NOT NULL, -- 'class' or 'exam'
+    title VARCHAR(255),
+    file_path VARCHAR(500) NOT NULL, -- Path to file or 'DIGITAL_ENTRY'
+    academic_years JSONB DEFAULT '[]',
+    faculties JSONB DEFAULT '[]',
+    departments JSONB DEFAULT '[]',
+    uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexing for performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_courses_instructor ON courses(instructor_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_course ON enrollments(course_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_assignment ON submissions(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_uploaded_by ON schedules(uploaded_by);
 
