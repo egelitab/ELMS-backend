@@ -1,5 +1,4 @@
-
-DO $ $
+DO $$
 DECLARE
     info_sys_id UUID;
     dr_abebe_id UUID;
@@ -43,9 +42,9 @@ BEGIN
     END IF;
 
     -- 5. Enroll the student
-    IF NOT EXISTS (SELECT 1 FROM enrollments WHERE course_id = ip_course_id AND student_id = dummy_student_id) THEN
-        INSERT INTO enrollments (course_id, student_id) VALUES (ip_course_id, dummy_student_id);
+    IF NOT EXISTS (SELECT 1 FROM enrollments WHERE course_id = ip_course_id AND user_id = dummy_student_id) THEN
+        INSERT INTO enrollments (course_id, user_id) VALUES (ip_course_id, dummy_student_id);
     END IF;
 
-END $ $;
+END $$;
 

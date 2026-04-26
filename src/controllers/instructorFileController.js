@@ -1,10 +1,15 @@
 const instructorFileService = require("../services/instructorFileService");
+const { logActivity } = require("../services/activityLogger");
 
 const createFolder = async (req, res) => {
     try {
         const { name, parent_id } = req.body;
         const instructor_id = req.user.id;
         const folder = await instructorFileService.createFolder(name, parent_id, instructor_id);
+
+        // Log activity
+        await logActivity(req.user.id, 'CREATE_FOLDER', folder.id, 'folder');
+
         res.status(201).json({ success: true, data: folder });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -49,12 +54,16 @@ const uploadInstructorFile = async (req, res) => {
             name: req.file.originalname,
             folder_id: folder_id || null,
             instructor_id,
-            file_path: `/uploads/${req.file.filename}`,
+            file_path: `/uploads/materials/${req.file.filename}`,
             file_type: req.file.mimetype.split("/")[1],
             file_size_bytes: req.file.size
         };
 
         const file = await instructorFileService.uploadFile(fileData);
+
+        // Log activity
+        await logActivity(req.user.id, 'UPLOAD_MATERIAL', file.id, 'material');
+
         res.status(201).json({ success: true, data: file });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

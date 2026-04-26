@@ -192,8 +192,8 @@ CREATE TABLE IF NOT EXISTS activity_logs (
 );
 
 -- Indexing for performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_courses_instructor ON courses(instructor_id);
-CREATE INDEX idx_enrollments_course ON enrollments(course_id);
-CREATE INDEX idx_submissions_assignment ON submissions(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_courses_instructor ON courses(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_course ON enrollments(course_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_assignment ON submissions(assignment_id);
 

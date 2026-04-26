@@ -1,4 +1,5 @@
 const materialService = require("../services/materialService");
+const { logActivity } = require("../services/activityLogger");
 const fs = require("fs");
 const path = require("path");
 
@@ -16,19 +17,18 @@ const uploadMaterial = async (req, res) => {
             return res.status(400).json({ success: false, message: "Course ID and Title are required" });
         }
 
-        // Usually, you should also verify here if the instructor owns the course
-        // const instructorOwnsCourse = await courseService.verifyInstructorOwnership(course_id, req.user.id);
-        // if (!instructorOwnsCourse) { ... }
-
         const material = await materialService.uploadMaterial({
             course_id,
             title,
             description,
-            file_path: "/uploads/" + req.file.filename,
+            file_path: "/uploads/materials/" + req.file.filename,
             file_type: req.file.mimetype,
             file_size_bytes: req.file.size,
             uploaded_by: req.user.id,
         });
+
+        // Log activity
+        await logActivity(req.user.id, 'UPLOAD_MATERIAL', material.id, 'material');
 
         res.status(201).json({
             success: true,
@@ -72,6 +72,9 @@ const deleteMaterial = async (req, res) => {
             fs.unlinkSync(fullPath);
         }
 
+        // Log activity
+        await logActivity(req.user.id, 'DELETE_MATERIAL', id, 'material');
+
         res.json({ success: true, message: "Material deleted successfully" });
     } catch (error) {
         res.status(403).json({ success: false, message: error.message });
@@ -103,6 +106,12 @@ const shareMaterials = async (req, res) => {
         }
 
         await materialService.shareMaterials(material_ids, course_id, department_id, section, chapter_id);
+
+        // Log activity
+        for (const id of material_ids) {
+            await logActivity(req.user.id, 'SHARE_MATERIAL', id, 'material');
+        }
+
         res.json({ success: true, message: "Materials shared successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -120,6 +129,12 @@ const unshareMaterials = async (req, res) => {
         }
 
         await materialService.unshareMaterials(material_ids, course_id);
+
+        // Log activity
+        for (const id of material_ids) {
+            await logActivity(req.user.id, 'UNSHARE_MATERIAL', id, 'material');
+        }
+
         res.json({ success: true, message: "Materials unshared successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

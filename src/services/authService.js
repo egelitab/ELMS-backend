@@ -40,5 +40,13 @@ exports.login = async (email, password) => {
   // Remove sensitive fields before returning
   const { password_hash, ...userWithoutPassword } = user;
 
+  // Log the login activity
+  try {
+    const { logActivity } = require("./activityLogger");
+    await logActivity(user.id, 'LOGIN', null, 'user');
+  } catch (err) {
+    console.error("Failed to log activity:", err);
+  }
+
   return { accessToken, user: userWithoutPassword };
 };

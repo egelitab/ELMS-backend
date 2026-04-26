@@ -1,4 +1,5 @@
 const assignmentService = require("../services/assignmentService");
+const { logActivity } = require("../services/activityLogger");
 
 // ------------------------
 // INSTRUCTOR ACTIONS
@@ -18,6 +19,9 @@ exports.createAssignment = async (req, res) => {
             is_group_assignment: is_group_assignment === 'true' || is_group_assignment === true,
             created_by: req.user.id
         });
+
+        // Log activity
+        await logActivity(req.user.id, 'CREATE_ASSIGNMENT', assignment.id, 'assignment');
 
         res.status(201).json({ success: true, data: assignment });
     } catch (error) {
@@ -57,6 +61,9 @@ exports.gradeSubmission = async (req, res) => {
             graded_by: req.user.id
         });
 
+        // Log activity
+        await logActivity(req.user.id, 'GRADE_SUBMISSION', id, 'submission');
+
         res.json({ success: true, data: submission });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -89,8 +96,11 @@ exports.submitAssignment = async (req, res) => {
             assignment_id,
             user_id: req.user.role === 'student' ? req.user.id : null,
             group_id: group_id || null, // Provided if it's a group submission
-            file_path: `/uploads/${req.file.filename}`
+            file_path: `/uploads/assessments/${req.file.filename}` // Adjusted path for assessments
         });
+
+        // Log activity
+        await logActivity(req.user.id, 'SUBMIT_ASSIGNMENT', submission.id, 'submission');
 
         res.status(201).json({ success: true, message: "Assignment submitted successfully", data: submission });
     } catch (error) {

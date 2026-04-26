@@ -11,8 +11,20 @@ if (!fs.existsSync(uploadsDir)) {
 // Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // You could theoretically organize by course ID, e.g. path.join(uploadsDir, req.body.course_id)
-    cb(null, uploadsDir);
+    let targetDir = uploadsDir;
+
+    // Check if it's an assessment submission
+    if (req.originalUrl.includes("/api/assignments/submit")) {
+      targetDir = path.join(uploadsDir, "assessments");
+    } else if (req.originalUrl.includes("/api/instructor-files") || req.originalUrl.includes("/api/materials")) {
+      targetDir = path.join(uploadsDir, "materials");
+    }
+
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    cb(null, targetDir);
   },
   filename: (req, file, cb) => {
     // Unique filename to prevent overwriting

@@ -1,4 +1,5 @@
 const courseService = require("../services/courseService");
+const { logActivity } = require("../services/activityLogger");
 
 const createCourse = async (req, res) => {
   try {
@@ -24,6 +25,9 @@ const createCourse = async (req, res) => {
       year,
       semester
     });
+
+    // Log activity
+    await logActivity(req.user.id, 'CREATE_COURSE', course.id, 'course');
 
     res.status(201).json({
       success: true,
@@ -119,6 +123,9 @@ const uploadCourseGuide = async (req, res) => {
     const guideUrl = `/uploads/${req.file.filename}`;
     const course = await courseService.updateCourseGuide(courseId, guideUrl);
 
+    // Log activity
+    await logActivity(req.user.id, 'UPLOAD_COURSE_GUIDE', courseId, 'course');
+
     res.json({
       success: true,
       data: course
@@ -151,6 +158,9 @@ const addCourseChapter = async (req, res) => {
     }
 
     const chapter = await courseService.addChapter(courseId, title, order_index || 0);
+
+    // Log activity
+    await logActivity(req.user.id, 'ADD_CHAPTER', chapter.id, 'chapter');
 
     res.status(201).json({
       success: true,
