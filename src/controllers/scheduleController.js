@@ -3,7 +3,7 @@ const path = require("path");
 
 exports.uploadSchedule = async (req, res) => {
     try {
-        const { type, academic_years, faculties, departments, title, sections } = req.body;
+        const { type, academic_years, faculties, departments, title, sections, semester } = req.body;
         const file = req.file;
 
         const filePath = file ? file.path : 'DIGITAL_ENTRY';
@@ -15,8 +15,8 @@ exports.uploadSchedule = async (req, res) => {
         const parsedSections = typeof sections === 'string' ? JSON.parse(sections) : (sections || []);
 
         const result = await pool.query(
-            `INSERT INTO schedules (type, file_path, academic_years, faculties, departments, sections, uploaded_by, title)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO schedules (type, file_path, academic_years, faculties, departments, sections, uploaded_by, title, semester)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
              RETURNING *`,
             [
                 type,
@@ -26,7 +26,8 @@ exports.uploadSchedule = async (req, res) => {
                 parsedDepartments || [],
                 parsedSections,
                 req.user.id,
-                title || null
+                title || null,
+                semester || null
             ]
         );
 
