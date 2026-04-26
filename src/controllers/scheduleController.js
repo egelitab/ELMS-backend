@@ -43,6 +43,53 @@ exports.uploadSchedule = async (req, res) => {
     }
 };
 
+exports.getMySchedules = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Get user details
+        const userRes = await pool.query(
+            "SELECT d.name as department_name, u.year, u.section, u.role FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = $1",
+            [userId]
+        );
+
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const user = userRes.rows[0];
+        const { department_name, year, section, role } = user;
+
+        let query = `
+            SELECT * FROM schedules 
+            WHERE type = 'class' 
+            AND (departments @> '["All Departments"]'::jsonb OR departments @> $1::jsonb)
+        `;
+        let params = [JSON.stringify(department_name ? [department_name] : [])];
+
+        if (role === 'student') {
+            // For students, also filter by year and section if available
+            if (year) {
+                query += " AND (academic_years @> '[]'::jsonb OR academic_years @> $2::jsonb)";
+                params.push(JSON.stringify([year.toString()]));
+            }
+            if (section) {
+                const sectionParamIndex = params.length + 1;
+                query += ` AND (sections @> '[]'::jsonb OR sections @> $${sectionParamIndex}::jsonb)`;
+                params.push(JSON.stringify([section]));
+            }
+        }
+
+        query += " ORDER BY created_at DESC";
+
+        const result = await pool.query(query, params);
+        res.json({ success: true, data: result.rows });
+    } catch (err) {
+        console.error("Error fetching my schedules:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 exports.getAllSchedules = async (req, res) => {
     try {
         const result = await pool.query("SELECT * FROM schedules ORDER BY created_at DESC");

@@ -13,6 +13,11 @@ router.post("/upload",
     scheduleController.uploadSchedule
 );
 
+router.get("/my-schedule",
+    verifyToken(),
+    scheduleController.getMySchedules
+);
+
 router.get("/",
     verifyToken(),
     scheduleController.getAllSchedules
