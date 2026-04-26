@@ -2,9 +2,11 @@ const pool = require("../config/db");
 
 exports.getAllDepartments = async () => {
   const result = await pool.query(`
-    SELECT d.id, d.name, f.name as faculty_name 
+    SELECT d.id, d.name, d.description, f.name as faculty_name,
+           u.first_name || ' ' || u.last_name as person_in_charge
     FROM departments d
     LEFT JOIN faculties f ON d.faculty_id = f.id
+    LEFT JOIN users u ON d.head_of_department_id = u.id
     ORDER BY d.name ASC
   `);
   return result.rows;
