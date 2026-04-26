@@ -18,4 +18,16 @@ router.get("/",
     scheduleController.getAllSchedules
 );
 
+router.delete("/:id",
+    verifyToken(),
+    authorizeRoles("admin"),
+    scheduleController.deleteSchedule
+);
+
+router.patch("/:id/content",
+    verifyToken(),
+    authorizeRoles("admin"),
+    scheduleController.updateDigitalContent
+);
+
 module.exports = router;

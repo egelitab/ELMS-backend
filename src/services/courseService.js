@@ -1,13 +1,16 @@
 const pool = require("../config/db");
 
-const createCourse = async ({ course_code, title, description, instructor_id, department_id, year, semester }) => {
+const createCourse = async ({ course_code, title, description, instructor_id, department_id, department_ids, year, semester }) => {
+  // If single department_id is provided, convert it to an array for the new column
+  const finalDeptIds = department_ids || (department_id ? [department_id] : []);
+
   const query = `
-    INSERT INTO courses (course_code, title, description, instructor_id, department_id, year, semester)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    INSERT INTO courses (course_code, title, description, instructor_id, department_id, department_ids, year, semester)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING *;
   `;
 
-  const values = [course_code, title, description, instructor_id, department_id, year, semester];
+  const values = [course_code, title, description, instructor_id, department_id || null, JSON.stringify(finalDeptIds), year, semester];
 
   const { rows } = await pool.query(query, values);
   return rows[0];
@@ -50,8 +53,9 @@ const getAllCourses = async (filters = {}) => {
   let paramCount = 1;
 
   if (filters.department_id) {
-    query += ` AND c.department_id = $${paramCount++}`;
+    query += ` AND (c.department_id = $${paramCount}::uuid OR c.department_ids @> jsonb_build_array($${paramCount}::text))`;
     values.push(filters.department_id);
+    paramCount++;
   }
   if (filters.faculty_id) {
     query += ` AND d.faculty_id = $${paramCount++}`;
@@ -88,7 +92,7 @@ const getAllCourses = async (filters = {}) => {
 
 const getInstructorCourses = async (instructor_id) => {
   const query = `
-    SELECT c.*, COUNT(e.student_id)::int as student_count
+    SELECT c.*, COUNT(e.user_id)::int as student_count
     FROM courses c
     LEFT JOIN enrollments e ON c.id = e.course_id
     WHERE c.instructor_id = $1
@@ -102,7 +106,7 @@ const getInstructorTargets = async (instructor_id) => {
   const query = `
     SELECT DISTINCT d.id as department_id, d.name as department_name, u.section 
     FROM enrollments e 
-    JOIN users u ON e.student_id = u.id 
+    JOIN users u ON e.user_id = u.id 
     JOIN courses c ON e.course_id = c.id 
     JOIN departments d ON u.department_id = d.id
     WHERE c.instructor_id = $1 AND u.section IS NOT NULL
@@ -131,9 +135,9 @@ const getInstructorTargets = async (instructor_id) => {
 
 const getCourseEnrollmentStats = async (course_id) => {
   const query = `
-    SELECT d.id as department_id, d.name as department_name, u.section, COUNT(e.student_id)::int as student_count
+    SELECT d.id as department_id, d.name as department_name, u.section, COUNT(e.user_id)::int as student_count
     FROM enrollments e
-    JOIN users u ON e.student_id = u.id
+    JOIN users u ON e.user_id = u.id
     JOIN departments d ON u.department_id = d.id
     WHERE e.course_id = $1
     GROUP BY d.id, d.name, u.section
@@ -148,7 +152,7 @@ const getStudentCourses = async (studentId) => {
     FROM courses c
     JOIN enrollments e ON c.id = e.course_id
     LEFT JOIN users u ON c.instructor_id = u.id
-    WHERE e.student_id = $1
+    WHERE e.user_id = $1
   `;
   const { rows } = await pool.query(query, [studentId]);
   return rows;

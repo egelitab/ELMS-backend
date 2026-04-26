@@ -3,7 +3,7 @@ const { logActivity } = require("../services/activityLogger");
 
 const createCourse = async (req, res) => {
   try {
-    const { course_code, title, description, department_id, instructor_id, year, semester } = req.body;
+    const { course_code, title, description, department_id, department_ids, instructor_id, year, semester } = req.body;
 
     if (!course_code || !title) {
       return res.status(400).json({
@@ -22,6 +22,7 @@ const createCourse = async (req, res) => {
       description,
       instructor_id: final_instructor_id,
       department_id,
+      department_ids,
       year,
       semester
     });

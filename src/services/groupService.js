@@ -8,9 +8,9 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
 
     // 1. Fetch students, including names for alphabetic sorting
     let studentsQuery = `
-      SELECT e.student_id, (u.first_name || ' ' || u.last_name) as full_name 
+      SELECT e.user_id, (u.first_name || ' ' || u.last_name) as full_name 
       FROM enrollments e 
-      JOIN users u ON e.student_id = u.id 
+      JOIN users u ON e.user_id = u.id 
       WHERE e.course_id = $1
     `;
     let queryParams = [course_id];
@@ -45,7 +45,7 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
       throw new Error("Method not supported");
     }
 
-    const studentIds = students.map(s => s.student_id);
+    const studentIds = students.map(s => s.user_id);
 
     // 3. Clear existing groups ONLY for this specific filter (department + section)
     await client.query(

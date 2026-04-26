@@ -52,9 +52,9 @@ const getStudentAnnouncements = async (student_id) => {
         FROM announcements a
         JOIN courses c ON a.course_id = c.id
         JOIN enrollments e ON e.course_id = c.id
-        JOIN users s ON e.student_id = s.id
+        JOIN users s ON e.user_id = s.id
         LEFT JOIN users u ON a.posted_by = u.id
-        WHERE e.student_id = $1::uuid AND (a.section IS NULL OR a.section = s.section)
+        WHERE e.user_id = $1::uuid AND (a.section IS NULL OR a.section = s.section)
         ORDER BY a.created_at DESC;
     `;
     const { rows } = await pool.query(query, [student_id]);
