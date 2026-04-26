@@ -18,6 +18,8 @@ const announcementRoutes = require("./routes/announcementRoutes");
 const instructorFileRoutes = require("./routes/instructorFileRoutes");
 const systemRoutes = require("./routes/systemRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
+const systemMessageRoutes = require("./routes/systemMessageRoutes");
+
 
 const app = express();
 
@@ -45,6 +47,8 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/instructor-files", instructorFileRoutes);
 app.use("/api/system", systemRoutes);
 app.use("/api/schedules", scheduleRoutes);
+app.use("/api/system-messages", systemMessageRoutes);
+
 
 // Health check route
 app.get("/", (req, res) => {
