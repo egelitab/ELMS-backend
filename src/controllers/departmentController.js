@@ -40,3 +40,12 @@ exports.getAllInstitutions = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+exports.getDepartmentSections = async (req, res) => {
+    try {
+        const { departmentId } = req.params;
+        const sections = await departmentService.getDepartmentSections(departmentId);
+        res.json({ success: true, data: sections });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};

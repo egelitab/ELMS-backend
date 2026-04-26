@@ -39,3 +39,13 @@ exports.getAllInstitutions = async () => {
   `);
   return result.rows;
 };
+
+exports.getDepartmentSections = async (departmentId) => {
+  const result = await pool.query(`
+    SELECT DISTINCT section
+    FROM users
+    WHERE department_id = $1 AND section IS NOT NULL AND section != ''
+    ORDER BY section ASC
+  `, [departmentId]);
+  return result.rows.map(r => r.section);
+};

@@ -13,4 +13,7 @@ router.get("/institutions", departmentController.getAllInstitutions);
 // Add a new department
 router.post("/", departmentController.addDepartment);
 
+// Get sections for a department
+router.get("/:departmentId/sections", departmentController.getDepartmentSections);
+
 module.exports = router;

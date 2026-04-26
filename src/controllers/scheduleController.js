@@ -3,12 +3,10 @@ const path = require("path");
 
 exports.uploadSchedule = async (req, res) => {
     try {
-        const { type, academic_years, faculties, departments } = req.body;
+        const { type, academic_years, faculties, departments, title } = req.body;
         const file = req.file;
 
-        if (!file) {
-            return res.status(400).json({ success: false, message: "No file uploaded" });
-        }
+        const filePath = file ? file.path : 'DIGITAL_ENTRY';
 
         // Parse JSON strings if they come from FormData
         const parsedYears = typeof academic_years === 'string' ? JSON.parse(academic_years) : academic_years;
@@ -16,16 +14,17 @@ exports.uploadSchedule = async (req, res) => {
         const parsedDepartments = typeof departments === 'string' ? JSON.parse(departments) : departments;
 
         const result = await pool.query(
-            `INSERT INTO schedules (type, file_path, academic_years, faculties, departments, uploaded_by)
-             VALUES ($1, $2, $3, $4, $5, $6)
+            `INSERT INTO schedules (type, file_path, academic_years, faculties, departments, uploaded_by, title)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              RETURNING *`,
             [
                 type,
-                file.path,
+                filePath,
                 parsedYears || [],
                 parsedFaculties || [],
                 parsedDepartments || [],
-                req.user.id
+                req.user.id,
+                title || null
             ]
         );
 
