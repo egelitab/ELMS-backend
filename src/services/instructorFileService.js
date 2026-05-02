@@ -203,9 +203,18 @@ const duplicateEntry = async (id, type, targetFolderId, instructor_id, newName) 
 };
 
 const getRecycleBin = async (instructor_id) => {
+    // Auto-delete expired items (older than 30 days)
+    await pool.query("DELETE FROM materials WHERE uploaded_by = $1 AND is_deleted = true AND deleted_at < NOW() - INTERVAL '30 days'", [instructor_id]);
+
     const query = "SELECT *, title as name FROM materials WHERE uploaded_by = $1 AND is_deleted = true ORDER BY deleted_at DESC";
     const { rows } = await pool.query(query, [instructor_id]);
     return rows;
+};
+
+const permanentlyDeleteEntry = async (id, type, instructor_id) => {
+    const query = "DELETE FROM materials WHERE id = $1 AND uploaded_by = $2 AND is_deleted = true RETURNING *";
+    const { rows } = await pool.query(query, [id, instructor_id]);
+    return rows[0];
 };
 
 const restoreEntry = async (id, type, instructor_id) => {
@@ -229,5 +238,6 @@ module.exports = {
     moveEntry,
     duplicateEntry,
     getRecycleBin,
-    restoreEntry
+    restoreEntry,
+    permanentlyDeleteEntry
 };

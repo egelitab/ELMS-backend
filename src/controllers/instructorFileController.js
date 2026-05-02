@@ -151,6 +151,16 @@ const restoreEntry = async (req, res) => {
     }
 };
 
+const permanentlyDeleteEntry = async (req, res) => {
+    try {
+        const { id, type } = req.params;
+        await instructorFileService.permanentlyDeleteEntry(id, type, req.user.id);
+        res.status(200).json({ success: true, message: "Item permanently deleted" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     createFolder,
     getStorageContents,
@@ -162,5 +172,6 @@ module.exports = {
     moveEntry,
     duplicateEntry,
     getRecycleBin,
-    restoreEntry
+    restoreEntry,
+    permanentlyDeleteEntry
 };

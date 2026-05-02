@@ -16,5 +16,6 @@ router.patch("/move", verifyToken(), authorizeRoles("instructor"), instructorFil
 router.post("/duplicate", verifyToken(), authorizeRoles("instructor"), instructorFileController.duplicateEntry);
 router.patch("/restore", verifyToken(), authorizeRoles("instructor"), instructorFileController.restoreEntry);
 router.get("/recycle-bin", verifyToken(), authorizeRoles("instructor"), instructorFileController.getRecycleBin);
+router.delete("/permanent/:type/:id", verifyToken(), authorizeRoles("instructor"), instructorFileController.permanentlyDeleteEntry);
 
 module.exports = router;
