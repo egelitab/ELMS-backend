@@ -33,24 +33,30 @@ const generateGroups = async (course_id, studentsPerGroup, department_id = null,
     }
 
     // 2. Handle Grouping Method
-    if (method === 'Random') {
+    const normalizedMethod = (method || 'Random').trim().toLowerCase();
+
+    if (normalizedMethod === 'random') {
       // Fisher-Yates shuffle
       for (let i = students.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [students[i], students[j]] = [students[j], students[i]];
       }
-    } else if (method === 'Alphabetic') {
-      students.sort((a, b) => a.full_name.localeCompare(b.full_name));
+    } else if (normalizedMethod === 'alphabetic') {
+      students.sort((a, b) => {
+        const nameA = a.full_name || '';
+        const nameB = b.full_name || '';
+        return nameA.localeCompare(nameB);
+      });
     } else {
-      throw new Error("Method not supported");
+      throw new Error("Method not supported: " + method);
     }
 
     const studentIds = students.map(s => s.user_id);
 
-    // 3. Clear existing groups ONLY for this specific filter (department + section)
+    // 3. Clear existing groups ONLY for this specific filter (department + section + batch_name)
     await client.query(
-      "DELETE FROM groups WHERE course_id = $1 AND (department_id = $2 OR (department_id IS NULL AND $2 IS NULL)) AND (section = $3 OR (section IS NULL AND $3 IS NULL))",
-      [course_id, department_id, section]
+      "DELETE FROM groups WHERE course_id = $1 AND (department_id = $2 OR (department_id IS NULL AND $2 IS NULL)) AND (section = $3 OR (section IS NULL AND $3 IS NULL)) AND batch_name = $4",
+      [course_id, department_id, section, title]
     );
 
     const createdGroups = [];
@@ -104,8 +110,8 @@ const getGroupsByCourse = async (course_id) => {
              json_agg(
                json_build_object(
                  'id', u.id, 
-                 'full_name', (u.first_name || ' ' || u.last_name)
-               )
+                 'full_name', (u.first_name || ' ' || COALESCE(u.last_name, ''))
+               ) ORDER BY u.first_name, u.last_name
              ) FILTER (WHERE u.id IS NOT NULL), 
              '[]'
            ) as members
@@ -115,7 +121,7 @@ const getGroupsByCourse = async (course_id) => {
     LEFT JOIN users u ON gm.user_id = u.id
     WHERE g.course_id = $1
     GROUP BY g.id, g.name, g.department_id, g.section, g.batch_name, g.method, d.name
-    ORDER BY g.batch_name, g.name
+    ORDER BY g.batch_name, NULLIF(regexp_replace(g.name, '\\D', '', 'g'), '')::int
   `;
   const { rows } = await pool.query(query, [course_id]);
   return rows;
