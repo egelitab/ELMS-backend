@@ -48,7 +48,7 @@ const getInstructorAnnouncements = async (instructor_id) => {
 
 const getStudentAnnouncements = async (student_id) => {
     const query = `
-        SELECT a.*, c.title as course_title, c.course_code, u.first_name as instructor_first_name, u.last_name as instructor_last_name
+        SELECT a.*, c.title as course_title, c.course_code, u.first_name as instructor_first_name, u.last_name as instructor_last_name, u.title as instructor_title
         FROM announcements a
         JOIN courses c ON a.course_id = c.id
         JOIN enrollments e ON e.course_id = c.id
