@@ -11,10 +11,10 @@ const uploadMaterial = async (req, res) => {
             return res.status(400).json({ success: false, message: "No file provided" });
         }
 
-        if (!course_id || !title) {
+        if (!title) {
             // cleanup the uploaded file if we fail validation
             fs.unlinkSync(req.file.path);
-            return res.status(400).json({ success: false, message: "Course ID and Title are required" });
+            return res.status(400).json({ success: false, message: "Title is required" });
         }
 
         const material = await materialService.uploadMaterial({

@@ -88,8 +88,6 @@ CREATE TABLE IF NOT EXISTS enrollments (
 -- 5. Course Materials
 CREATE TABLE IF NOT EXISTS materials (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
-    chapter_id UUID REFERENCES course_chapters(id) ON DELETE SET NULL, -- Material linked to a chapter
     title VARCHAR(255) NOT NULL,
     description TEXT,
     file_path VARCHAR(500) NOT NULL, -- Logical path on local filesystem

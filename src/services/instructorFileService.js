@@ -62,11 +62,29 @@ const uploadFile = async ({ name, folder_id, instructor_id, file_path, file_type
         targetFolderId = await getOrCreateUploadsFolder(instructor_id);
     }
 
-    const checkQuery = "SELECT id FROM materials WHERE uploaded_by = $1 AND title = $2 AND parent_id = $3 AND is_deleted = false";
-    const { rows: existing } = await pool.query(checkQuery, [instructor_id, name, targetFolderId]);
+    let finalName = name;
+    let nameWithoutExt = name;
+    let ext = "";
+    const dotIndex = name.lastIndexOf('.');
+    if (dotIndex > 0 && dotIndex < name.length - 1) {
+        nameWithoutExt = name.substring(0, dotIndex);
+        ext = name.substring(dotIndex);
+    }
 
-    if (existing.length > 0) {
-        throw new Error("A folder or file with this name already exists in this location.");
+    let currentNameBase = nameWithoutExt;
+    while (true) {
+        const checkQuery = "SELECT id FROM materials WHERE uploaded_by = $1 AND title = $2 AND parent_id = $3 AND is_deleted = false";
+        const { rows: existing } = await pool.query(checkQuery, [instructor_id, finalName, targetFolderId]);
+        if (existing.length === 0) break;
+
+        const match = currentNameBase.match(/_(\d+)$/);
+        if (match) {
+            const num = parseInt(match[1]) + 1;
+            currentNameBase = currentNameBase.substring(0, match.index) + `_${num}`;
+        } else {
+            currentNameBase = `${currentNameBase}_1`;
+        }
+        finalName = `${currentNameBase}${ext}`;
     }
 
     const query = `
@@ -74,7 +92,7 @@ const uploadFile = async ({ name, folder_id, instructor_id, file_path, file_type
         VALUES ($1, $2, $3, $4, $5, $6, 'file')
         RETURNING id, title as name, parent_id as folder_id, file_path, file_type, file_size_bytes, created_at;
     `;
-    const { rows } = await pool.query(query, [name, targetFolderId, instructor_id, file_path, file_type, file_size_bytes]);
+    const { rows } = await pool.query(query, [finalName, targetFolderId, instructor_id, file_path, file_type, file_size_bytes]);
     return rows[0];
 };
 

@@ -5,12 +5,37 @@ const uploadMaterial = async ({ course_id, title, description, file_path, file_t
   const instructorFileService = require("./instructorFileService");
   const uploadsFolderId = await instructorFileService.getOrCreateUploadsFolder(uploaded_by);
 
+  let finalName = title;
+  let nameWithoutExt = title;
+  let ext = "";
+  const dotIndex = title.lastIndexOf('.');
+  if (dotIndex > 0 && dotIndex < title.length - 1) {
+    nameWithoutExt = title.substring(0, dotIndex);
+    ext = title.substring(dotIndex);
+  }
+
+  let currentNameBase = nameWithoutExt;
+  while (true) {
+    const checkQuery = "SELECT id FROM materials WHERE uploaded_by = $1 AND title = $2 AND parent_id = $3 AND is_deleted = false";
+    const { rows: existing } = await pool.query(checkQuery, [uploaded_by, finalName, uploadsFolderId]);
+    if (existing.length === 0) break;
+
+    const match = currentNameBase.match(/_(\d+)$/);
+    if (match) {
+      const num = parseInt(match[1]) + 1;
+      currentNameBase = currentNameBase.substring(0, match.index) + `_${num}`;
+    } else {
+      currentNameBase = `${currentNameBase}_1`;
+    }
+    finalName = `${currentNameBase}${ext}`;
+  }
+
   const query = `
     INSERT INTO materials (title, description, file_path, file_type, file_size_bytes, uploaded_by, type, parent_id)
     VALUES ($1, $2, $3, $4, $5, $6, 'file', $7)
     RETURNING *;
   `;
-  const values = [title, description, file_path, file_type, file_size_bytes, uploaded_by, uploadsFolderId];
+  const values = [finalName, description, file_path, file_type, file_size_bytes, uploaded_by, uploadsFolderId];
   const { rows } = await pool.query(query, values);
   const material = rows[0];
 

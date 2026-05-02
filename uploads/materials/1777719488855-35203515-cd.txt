@@ -1,0 +1,5 @@
+Backend
+cd C:\Users\Eku\Documents\GitHub\ELMS-backend
+
+Frontend
+cd C:\Users\Eku\Documents\GitHub\elearning_app
