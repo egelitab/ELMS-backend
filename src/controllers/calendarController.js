@@ -18,7 +18,7 @@ exports.uploadCalendar = async (req, res) => {
             [
                 title,
                 academic_year,
-                file.path,
+                "/uploads/calendars/" + file.filename,
                 req.user.id
             ]
         );
@@ -63,7 +63,15 @@ exports.deleteCalendar = async (req, res) => {
         await pool.query("DELETE FROM academic_calendars WHERE id = $1", [id]);
 
         if (filePath) {
-            const absolutePath = path.resolve(filePath);
+            let absolutePath;
+            // Check if filePath is already absolute (legacy data)
+            if (path.isAbsolute(filePath)) {
+                absolutePath = filePath;
+            } else {
+                // Resolve relative path from project root
+                absolutePath = path.join(__dirname, "..", "..", filePath);
+            }
+
             if (fs.existsSync(absolutePath)) {
                 fs.unlinkSync(absolutePath);
             }
