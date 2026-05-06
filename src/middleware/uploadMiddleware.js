@@ -20,6 +20,8 @@ const storage = multer.diskStorage({
       targetDir = path.join(uploadsDir, "materials");
     } else if (req.originalUrl.includes("/api/schedules")) {
       targetDir = path.join(uploadsDir, "schedules");
+    } else if (req.originalUrl.includes("/api/calendars")) {
+      targetDir = path.join(uploadsDir, "calendars");
     }
 
     if (!fs.existsSync(targetDir)) {
