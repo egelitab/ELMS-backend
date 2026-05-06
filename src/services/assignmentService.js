@@ -113,10 +113,28 @@ const getGradingOverview = async (instructor_id) => {
 
 const getStudentAssignments = async (student_id) => {
     const query = `
-        SELECT a.*, c.title as course_title 
+        SELECT a.*, c.title as course_title,
+               s.id as submission_id,
+               s.submission_date,
+               s.grade,
+               s.feedback,
+               CASE WHEN s.id IS NOT NULL THEN true ELSE false END as is_submitted
         FROM assignments a
         JOIN courses c ON a.course_id = c.id
         JOIN enrollments e ON c.id = e.course_id
+        LEFT JOIN LATERAL (
+            SELECT id, submission_date, grade, feedback
+            FROM submissions
+            WHERE assignment_id = a.id AND (
+                (a.is_group_assignment = false AND user_id = $1)
+                OR 
+                (a.is_group_assignment = true AND group_id IN (
+                    SELECT group_id FROM group_members WHERE user_id = $1
+                ))
+            )
+            ORDER BY submission_date DESC
+            LIMIT 1
+        ) s ON true
         WHERE e.user_id = $1
         ORDER BY a.due_date ASC;
     `;
