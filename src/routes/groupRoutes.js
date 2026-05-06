@@ -12,6 +12,13 @@ router.post(
     groupController.generateGroups
 );
 
+// View groups for a student (groups they belong to)
+router.get(
+    "/student/my-groups",
+    verifyToken(),
+    groupController.getStudentGroups
+);
+
 // View groups for a generic course
 router.get(
     "/:courseId",

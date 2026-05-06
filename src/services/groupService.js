@@ -144,8 +144,35 @@ const deleteGroupsByBatch = async (course_id, batch_name) => {
   return { success: true };
 }
 
+const getGroupsForUser = async (user_id) => {
+  const query = `
+    SELECT g.id, g.name, g.batch_name, c.title as course_title, c.course_code,
+           COALESCE(
+             json_agg(
+               json_build_object(
+                 'id', u.id, 
+                 'full_name', (u.first_name || ' ' || COALESCE(u.last_name, '')),
+                 'title', COALESCE(u.title, '')
+               ) ORDER BY u.first_name, u.last_name
+             ) FILTER (WHERE u.id IS NOT NULL), 
+             '[]'
+           ) as members
+    FROM group_members gm_primary
+    JOIN groups g ON gm_primary.group_id = g.id
+    JOIN courses c ON g.course_id = c.id
+    LEFT JOIN group_members gm ON g.id = gm.group_id
+    LEFT JOIN users u ON gm.user_id = u.id
+    WHERE gm_primary.user_id = $1
+    GROUP BY g.id, g.name, g.batch_name, c.title, c.course_code
+    ORDER BY c.title, g.name
+  `;
+  const { rows } = await pool.query(query, [user_id]);
+  return rows;
+}
+
 module.exports = {
   generateGroups,
   getGroupsByCourse,
-  deleteGroupsByBatch
+  deleteGroupsByBatch,
+  getGroupsForUser
 };
