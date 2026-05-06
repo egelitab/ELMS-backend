@@ -111,11 +111,26 @@ const getGradingOverview = async (instructor_id) => {
     return rows;
 };
 
+const getStudentAssignments = async (student_id) => {
+    const query = `
+        SELECT a.*, c.title as course_title 
+        FROM assignments a
+        JOIN courses c ON a.course_id = c.id
+        JOIN enrollments e ON c.id = e.course_id
+        WHERE e.user_id = $1
+        ORDER BY a.due_date ASC;
+    `;
+    const { rows } = await pool.query(query, [student_id]);
+    return rows;
+};
+
+
 module.exports = {
     createAssignment,
     getAssignmentsByCourse,
     submitAssignment,
     getSubmissionsByAssignment,
     gradeSubmission,
-    getGradingOverview
+    getGradingOverview,
+    getStudentAssignments
 };

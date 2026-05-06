@@ -58,4 +58,13 @@ router.post(
     assignmentController.submitAssignment
 );
 
+// Get all assignments for the logged-in student
+router.get(
+    "/student/my-assignments",
+    verifyToken(),
+    authorizeRoles("student"),
+    assignmentController.getStudentAssignments
+);
+
 module.exports = router;
+
