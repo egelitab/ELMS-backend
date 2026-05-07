@@ -29,3 +29,11 @@ exports.updateTicketStatus = async (id, status) => {
     );
     return rows[0];
 };
+
+exports.createTicket = async ({ user_id, subject, description, priority = 'Medium' }) => {
+    const { rows } = await pool.query(
+        "INSERT INTO support_tickets (user_id, subject, description, priority) VALUES ($1, $2, $3, $4) RETURNING *",
+        [user_id, subject, description, priority]
+    );
+    return rows[0];
+};

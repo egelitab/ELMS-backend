@@ -56,6 +56,16 @@ exports.updateMe = async (req, res) => {
     try {
         const userId = req.user.id;
         const updatedUser = await userService.updateUser(userId, req.body);
+
+        // Create a support ticket for admin approval
+        const supportService = require("../services/supportService");
+        await supportService.createTicket({
+            user_id: userId,
+            subject: 'Profile Update Request',
+            description: `User requested to update personal information. New data: ${JSON.stringify(req.body, null, 2)}`,
+            priority: 'High'
+        });
+
         res.json({ success: true, data: updatedUser });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
