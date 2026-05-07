@@ -9,5 +9,7 @@ router.get("/tickets", authMiddleware(["admin"]), systemController.getTickets);
 router.post("/backup", authMiddleware(["admin"]), systemController.triggerBackup);
 router.get("/export/users", authMiddleware(["admin"]), systemController.exportUserActivity);
 router.get("/export/enrollments", authMiddleware(["admin"]), systemController.exportEnrollments);
+router.get("/config", authMiddleware(["admin"]), systemController.getSettings);
+router.put("/config", authMiddleware(["admin"]), systemController.updateSettings);
 
 module.exports = router;

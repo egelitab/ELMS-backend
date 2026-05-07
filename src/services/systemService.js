@@ -149,17 +149,90 @@ exports.getActivityLogs = async (limit = 10) => {
 };
 
 exports.triggerBackup = async () => {
-    // This would normally call a shell script or pg_dump
-    // Mocking the completion for now
-    return {
-        success: true,
-        message: "Backup saved to /server/backups/db_backup_" + new Date().getTime() + ".sql",
-        timestamp: new Date()
-    };
+    try {
+        const backupDir = path.join(__dirname, "..", "..", "backups");
+        if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir, { recursive: true });
+        }
+
+        const fileName = `db_backup_${Date.now()}.sql`;
+        const filePath = path.join(backupDir, fileName);
+
+        // List of tables to export
+        const tables = [
+            'institutions', 'faculties', 'departments', 'users', 'courses',
+            'course_chapters', 'enrollments', 'materials', 'material_shares',
+            'assignments', 'groups', 'group_members', 'submissions',
+            'announcements', 'activity_logs', 'schedules', 'system_settings'
+        ];
+
+        let sqlContent = `-- ELMS Database Export\n-- Generated: ${new Date().toISOString()}\n\n`;
+        sqlContent += "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET client_encoding = 'UTF8';\n\n";
+
+        for (const table of tables) {
+            try {
+                const { rows } = await pool.query(`SELECT * FROM ${table}`);
+                if (rows.length > 0) {
+                    sqlContent += `-- Data for table: ${table}\n`;
+                    const columns = Object.keys(rows[0]);
+
+                    for (const row of rows) {
+                        const values = columns.map(col => {
+                            const val = row[col];
+                            if (val === null) return 'NULL';
+                            if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                            if (val instanceof Date) return `'${val.toISOString()}'`;
+                            if (typeof val === 'object') {
+                                return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                            }
+                            return val;
+                        });
+                        sqlContent += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
+                    }
+                    sqlContent += "\n";
+                }
+            } catch (tableErr) {
+                console.warn(`Table ${table} skipped:`, tableErr.message);
+                sqlContent += `-- Table ${table} skipped during backup.\n\n`;
+            }
+        }
+
+        fs.writeFileSync(filePath, sqlContent);
+
+        return {
+            success: true,
+            message: `Backup successfully saved with real data to ${path.normalize(filePath)}`,
+            fileName: fileName,
+            timestamp: new Date()
+        };
+    } catch (error) {
+        console.error("Backup failed:", error);
+        throw new Error("Failed to generate backup: " + error.message);
+    }
 };
 
 const { logActivity } = require("./activityLogger");
 exports.logActivity = logActivity;
+
+exports.getSettings = async () => {
+    const { rows } = await pool.query("SELECT key, value FROM system_settings");
+    // Convert to object { key: value }
+    return rows.reduce((acc, row) => {
+        acc[row.key] = row.value;
+        return acc;
+    }, {});
+};
+
+exports.updateSetting = async (key, value) => {
+    const query = `
+        INSERT INTO system_settings (key, value) 
+        VALUES ($1, $2) 
+        ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = CURRENT_TIMESTAMP
+        RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [key, value.toString()]);
+    return rows[0];
+};
 
 exports.getUserActivityExport = async () => {
     const query = `

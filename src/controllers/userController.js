@@ -71,3 +71,16 @@ exports.updateMe = async (req, res) => {
         res.status(400).json({ success: false, message: err.message });
     }
 };
+
+exports.changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ success: false, message: "Missing current or new password" });
+        }
+        await userService.changePassword(req.user.id, currentPassword, newPassword);
+        res.json({ success: true, message: "Password changed successfully" });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};

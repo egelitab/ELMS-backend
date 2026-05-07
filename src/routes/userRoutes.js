@@ -9,6 +9,9 @@ router.get("/", authMiddleware(["admin"]), userController.getAllUsers);
 // Update own profile
 router.patch("/me", authMiddleware(), userController.updateMe);
 
+// Change own password
+router.post("/change-password", authMiddleware(), userController.changePassword);
+
 // Create a new user from admin panel
 router.post("/", authMiddleware(["admin"]), userController.createUser);
 
