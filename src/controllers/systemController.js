@@ -36,3 +36,21 @@ exports.triggerBackup = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+exports.exportUserActivity = async (req, res) => {
+    try {
+        const data = await systemService.getUserActivityExport();
+        res.json({ success: true, data });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.exportEnrollments = async (req, res) => {
+    try {
+        const data = await systemService.getEnrollmentExport();
+        res.json({ success: true, data });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
