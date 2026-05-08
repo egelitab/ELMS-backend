@@ -24,6 +24,10 @@ const systemMessageRoutes = require("./routes/systemMessageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const enrollmentRoutes = require("./routes/enrollmentRoutes");
 const supportRoutes = require("./routes/supportRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
+const conversionRoutes = require("./routes/conversionRoutes");
+const quizRoutes = require("./routes/quizRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 
 const app = express();
@@ -58,6 +62,10 @@ app.use("/api/system-messages", systemMessageRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/enrollments", enrollmentRoutes);
 app.use("/api/tickets", supportRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/convert", conversionRoutes);
+app.use("/api/quizzes", quizRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 
 // Health check route

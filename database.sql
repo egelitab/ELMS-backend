@@ -298,6 +298,80 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 25. Attendance Sessions
+CREATE TABLE IF NOT EXISTS attendance_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+    instructor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    title VARCHAR(255),
+    session_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 26. Attendance Records
+CREATE TABLE IF NOT EXISTS attendance_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID REFERENCES attendance_sessions(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'absent',
+    marked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(session_id, student_id)
+);
+
+-- 27. Quizzes
+CREATE TABLE IF NOT EXISTS quizzes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    duration_minutes INT DEFAULT 30,
+    max_attempts INT DEFAULT 1,
+    is_published BOOLEAN DEFAULT false,
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 28. Quiz Questions
+CREATE TABLE IF NOT EXISTS quiz_questions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quiz_id UUID REFERENCES quizzes(id) ON DELETE CASCADE,
+    question_text TEXT NOT NULL,
+    question_type VARCHAR(20) NOT NULL DEFAULT 'multiple_choice',
+    points INT DEFAULT 1,
+    order_index INT DEFAULT 0
+);
+
+-- 29. Quiz Options (for multiple_choice and true_false)
+CREATE TABLE IF NOT EXISTS quiz_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question_id UUID REFERENCES quiz_questions(id) ON DELETE CASCADE,
+    option_text TEXT NOT NULL,
+    is_correct BOOLEAN DEFAULT false
+);
+
+-- 30. Quiz Attempts
+CREATE TABLE IF NOT EXISTS quiz_attempts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    quiz_id UUID REFERENCES quizzes(id) ON DELETE CASCADE,
+    student_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    submitted_at TIMESTAMP,
+    score DECIMAL(5,2),
+    total_points INT,
+    status VARCHAR(20) DEFAULT 'in_progress'
+);
+
+-- 31. Quiz Answers
+CREATE TABLE IF NOT EXISTS quiz_answers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    attempt_id UUID REFERENCES quiz_attempts(id) ON DELETE CASCADE,
+    question_id UUID REFERENCES quiz_questions(id) ON DELETE CASCADE,
+    selected_option_id UUID REFERENCES quiz_options(id) ON DELETE SET NULL,
+    text_answer TEXT,
+    is_correct BOOLEAN,
+    points_earned INT DEFAULT 0
+);
+
 -- ============================================================
 -- Indexes
 -- ============================================================
