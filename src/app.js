@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const path = require("path");
+const { apiLimiter } = require("./middleware/rateLimiter");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
@@ -31,6 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(helmet());
 app.use(morgan("dev"));
+app.use("/api", apiLimiter);
 
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
