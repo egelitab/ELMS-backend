@@ -107,3 +107,13 @@ exports.submitAssignment = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+exports.getStudentAssignments = async (req, res) => {
+    try {
+        const assignments = await assignmentService.getStudentAssignments(req.user.id);
+        res.json({ success: true, data: assignments });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+

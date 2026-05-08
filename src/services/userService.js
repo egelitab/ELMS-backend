@@ -76,3 +76,16 @@ exports.updateUser = async (id, data) => {
     if (result.rows.length === 0) throw new Error("User not found");
     return result.rows[0];
 };
+
+exports.changePassword = async (userId, oldPassword, newPassword) => {
+    // Get user with password
+    const { rows } = await pool.query("SELECT password_hash FROM users WHERE id = $1", [userId]);
+    if (rows.length === 0) throw new Error("User not found");
+
+    const isMatch = await bcrypt.compare(oldPassword, rows[0].password_hash);
+    if (!isMatch) throw new Error("Current password incorrect");
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [hashedNewPassword, userId]);
+    return true;
+};

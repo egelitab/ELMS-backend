@@ -45,8 +45,19 @@ const deleteBatch = async (req, res) => {
     }
 };
 
+const getStudentGroups = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const groups = await groupService.getGroupsForUser(userId);
+        res.json({ success: true, data: groups });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
+
 module.exports = {
     generateGroups,
     getGroups,
-    deleteBatch
+    deleteBatch,
+    getStudentGroups
 };

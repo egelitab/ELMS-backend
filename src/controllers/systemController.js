@@ -36,3 +36,44 @@ exports.triggerBackup = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+exports.exportUserActivity = async (req, res) => {
+    try {
+        const data = await systemService.getUserActivityExport();
+        res.json({ success: true, data });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.exportEnrollments = async (req, res) => {
+    try {
+        const data = await systemService.getEnrollmentExport();
+        res.json({ success: true, data });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.getSettings = async (req, res) => {
+    try {
+        const settings = await systemService.getSettings();
+        res.json({ success: true, data: settings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateSettings = async (req, res) => {
+    try {
+        const updates = req.body; // Expecting { key: value, ... }
+        const results = [];
+        for (const [key, value] of Object.entries(updates)) {
+            const result = await systemService.updateSetting(key, value);
+            results.push(result);
+        }
+        res.json({ success: true, data: results });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
