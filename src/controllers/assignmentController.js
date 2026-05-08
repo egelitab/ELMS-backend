@@ -117,3 +117,27 @@ exports.getStudentAssignments = async (req, res) => {
     }
 };
 
+exports.updateAssignment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, due_date, is_group_assignment } = req.body;
+        const assignment = await assignmentService.updateAssignment(
+            id, { title, description, due_date, is_group_assignment }, req.user.id
+        );
+        await logActivity(req.user.id, 'UPDATE_ASSIGNMENT', id, 'assignment');
+        res.json({ success: true, data: assignment });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+exports.deleteAssignment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await assignmentService.deleteAssignment(id, req.user.id);
+        await logActivity(req.user.id, 'DELETE_ASSIGNMENT', id, 'assignment');
+        res.json({ success: true, message: "Assignment deleted successfully" });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};

@@ -163,6 +163,39 @@ const getStudentAssignments = async (student_id) => {
     return rows;
 };
 
+const updateAssignment = async (id, { title, description, due_date, is_group_assignment }, updated_by) => {
+    // Verify ownership
+    const check = await pool.query(
+        "SELECT a.id FROM assignments a JOIN courses c ON a.course_id = c.id WHERE a.id = $1 AND c.instructor_id = $2",
+        [id, updated_by]
+    );
+    if (check.rows.length === 0) throw new Error("Assignment not found or you don't have permission");
+
+    const { rows } = await pool.query(
+        `UPDATE assignments 
+         SET title = COALESCE($1, title),
+             description = COALESCE($2, description),
+             due_date = COALESCE($3, due_date),
+             is_group_assignment = COALESCE($4, is_group_assignment),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $5
+         RETURNING *`,
+        [title, description, due_date, is_group_assignment, id]
+    );
+    return rows[0];
+};
+
+const deleteAssignment = async (id, deleted_by) => {
+    // Verify ownership
+    const check = await pool.query(
+        "SELECT a.id FROM assignments a JOIN courses c ON a.course_id = c.id WHERE a.id = $1 AND c.instructor_id = $2",
+        [id, deleted_by]
+    );
+    if (check.rows.length === 0) throw new Error("Assignment not found or you don't have permission");
+
+    await pool.query("DELETE FROM assignments WHERE id = $1", [id]);
+    return { message: "Assignment deleted successfully" };
+};
 
 module.exports = {
     createAssignment,
@@ -171,5 +204,7 @@ module.exports = {
     getSubmissionsByAssignment,
     gradeSubmission,
     getGradingOverview,
-    getStudentAssignments
+    getStudentAssignments,
+    updateAssignment,
+    deleteAssignment,
 };

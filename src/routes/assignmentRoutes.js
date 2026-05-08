@@ -23,6 +23,12 @@ router.get("/:assignmentId/submissions", authMiddleware(["instructor"]), assignm
 // Grade a submission
 router.put("/submissions/:id/grade", authMiddleware(["instructor"]), assignmentController.gradeSubmission);
 
+// Update an assignment
+router.put("/:id", authMiddleware(["instructor"]), assignmentController.updateAssignment);
+
+// Delete an assignment
+router.delete("/:id", authMiddleware(["instructor"]), assignmentController.deleteAssignment);
+
 // ========================
 // Student Routes
 // ========================
