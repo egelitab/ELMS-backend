@@ -20,6 +20,7 @@ const systemRoutes = require("./routes/systemRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
 const calendarRoutes = require("./routes/calendarRoutes");
 const systemMessageRoutes = require("./routes/systemMessageRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/system", systemRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/calendars", calendarRoutes);
 app.use("/api/system-messages", systemMessageRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 
 // Health check route

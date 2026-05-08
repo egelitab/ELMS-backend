@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const notificationService = require("./notificationService");
 
 const createAnnouncement = async ({ course_id, title, content, posted_by, section, attachments }) => {
     const query = `
@@ -7,7 +8,40 @@ const createAnnouncement = async ({ course_id, title, content, posted_by, sectio
         RETURNING *;
     `;
     const { rows } = await pool.query(query, [course_id, title, content, posted_by, section || null, JSON.stringify(attachments || [])]);
-    return rows[0];
+    const announcement = rows[0];
+
+    // Trigger notification for all enrolled students
+    try {
+        let studentQuery = "SELECT user_id FROM enrollments WHERE course_id = $1";
+        let params = [course_id];
+
+        if (section) {
+            studentQuery = `
+                SELECT e.user_id 
+                FROM enrollments e
+                JOIN users u ON e.user_id = u.id
+                WHERE e.course_id = $1 AND u.section = $2
+            `;
+            params.push(section);
+        }
+
+        const { rows: students } = await pool.query(studentQuery, params);
+        const { rows: courseInfo } = await pool.query("SELECT title FROM courses WHERE id = $1", [course_id]);
+        const courseName = courseInfo[0]?.title || "Course";
+
+        const notificationData = {
+            userIds: students.map(s => s.user_id),
+            type: 'announcement',
+            title: `New Announcement in ${courseName}`,
+            content: title,
+            relatedId: announcement.id
+        };
+        await notificationService.createNotificationsBatch(notificationData);
+    } catch (err) {
+        console.error("Failed to send announcement notification:", err);
+    }
+
+    return announcement;
 };
 
 const updateAnnouncement = async (id, { title, content, section, attachments }) => {

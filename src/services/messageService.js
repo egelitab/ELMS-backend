@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const notificationService = require("./notificationService");
 
 // --- One-to-One Messages ---
 const sendMessage = async ({ sender_id, receiver_id, content }) => {
@@ -8,7 +9,25 @@ const sendMessage = async ({ sender_id, receiver_id, content }) => {
         RETURNING *;
     `;
     const { rows } = await pool.query(query, [sender_id, receiver_id, content]);
-    return rows[0];
+    const message = rows[0];
+
+    // Trigger notification
+    try {
+        const { rows: senderRows } = await pool.query("SELECT first_name, last_name FROM users WHERE id = $1", [sender_id]);
+        const senderName = senderRows[0] ? `${senderRows[0].first_name} ${senderRows[0].last_name}` : "Someone";
+
+        await notificationService.createNotification({
+            userId: receiver_id,
+            type: 'chat',
+            title: `New message from ${senderName}`,
+            content: content.length > 50 ? content.substring(0, 47) + "..." : content,
+            relatedId: sender_id
+        });
+    } catch (err) {
+        console.error("Failed to send chat notification:", err);
+    }
+
+    return message;
 };
 
 const getInbox = async (user_id) => {
@@ -56,7 +75,30 @@ const sendGroupMessage = async ({ group_id, sender_id, content }) => {
         RETURNING *;
     `;
     const { rows } = await pool.query(query, [group_id, sender_id, content]);
-    return rows[0];
+    const message = rows[0];
+
+    // Trigger notification for all group members except sender
+    try {
+        const { rows: groupMembers } = await pool.query("SELECT user_id FROM group_members WHERE group_id = $1 AND user_id != $2", [group_id, sender_id]);
+        const { rows: groupInfo } = await pool.query("SELECT name FROM groups WHERE id = $1", [group_id]);
+        const { rows: senderRows } = await pool.query("SELECT first_name, last_name FROM users WHERE id = $1", [sender_id]);
+
+        const groupName = groupInfo[0]?.name || "Group";
+        const senderName = senderRows[0] ? `${senderRows[0].first_name} ${senderRows[0].last_name}` : "Someone";
+
+        const notificationData = {
+            userIds: groupMembers.map(m => m.user_id),
+            type: 'chat',
+            title: `${senderName} in ${groupName}`,
+            content: content.length > 50 ? content.substring(0, 47) + "..." : content,
+            relatedId: group_id
+        };
+        await notificationService.createNotificationsBatch(notificationData);
+    } catch (err) {
+        console.error("Failed to send group chat notification:", err);
+    }
+
+    return message;
 };
 
 /**

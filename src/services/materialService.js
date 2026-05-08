@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const notificationService = require("./notificationService");
 
 const uploadMaterial = async ({ course_id, title, description, file_path, file_type, file_size_bytes, uploaded_by }) => {
   // Now uploads are private by default in Uploads folder
@@ -117,6 +118,26 @@ const shareMaterials = async (material_ids, course_id, department_id, section, c
   queryText += " ON CONFLICT DO NOTHING";
 
   await pool.query(queryText, values);
+
+  // Trigger notifications for shared materials
+  try {
+    if (course_id) {
+      const { rows: students } = await pool.query("SELECT user_id FROM enrollments WHERE course_id = $1", [course_id]);
+      const { rows: courseInfo } = await pool.query("SELECT title FROM courses WHERE id = $1", [course_id]);
+      const courseName = courseInfo[0]?.title || "Course";
+
+      const notificationData = {
+        userIds: students.map(s => s.user_id),
+        type: 'material',
+        title: `New Materials in ${courseName}`,
+        content: `New materials have been shared in your course.`,
+        relatedId: course_id
+      };
+      await notificationService.createNotificationsBatch(notificationData);
+    }
+  } catch (err) {
+    console.error("Failed to send material notification:", err);
+  }
 };
 
 const unshareMaterials = async (material_ids, course_id) => {

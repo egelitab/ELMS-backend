@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const notificationService = require("./notificationService");
 
 const createAssignment = async ({ course_id, title, description, due_date, file_path, is_group_assignment, created_by }) => {
     const query = `
@@ -8,7 +9,27 @@ const createAssignment = async ({ course_id, title, description, due_date, file_
   `;
     const values = [course_id, title, description, due_date, file_path, is_group_assignment, created_by];
     const { rows } = await pool.query(query, values);
-    return rows[0];
+    const assignment = rows[0];
+
+    // Trigger notification for all enrolled students
+    try {
+        const { rows: students } = await pool.query("SELECT user_id FROM enrollments WHERE course_id = $1", [course_id]);
+        const { rows: courseInfo } = await pool.query("SELECT title FROM courses WHERE id = $1", [course_id]);
+        const courseName = courseInfo[0]?.title || "Course";
+
+        const notificationData = {
+            userIds: students.map(s => s.user_id),
+            type: 'task',
+            title: `New Assignment in ${courseName}`,
+            content: title,
+            relatedId: assignment.id
+        };
+        await notificationService.createNotificationsBatch(notificationData);
+    } catch (err) {
+        console.error("Failed to send assignment notification:", err);
+    }
+
+    return assignment;
 };
 
 const getAssignmentsByCourse = async (course_id) => {
