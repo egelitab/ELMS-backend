@@ -1,128 +1,104 @@
 const instructorFileService = require("../services/instructorFileService");
 const { logActivity } = require("../services/activityLogger");
 
-const createFolder = async (req, res) => {
+exports.createFolder = async (req, res) => {
     try {
         const { name, parent_id } = req.body;
-        const instructor_id = req.user.id;
-        const folder = await instructorFileService.createFolder(name, parent_id, instructor_id);
+        const folder = await instructorFileService.createFolder(name, parent_id, req.user.id);
 
-        // Log activity
         await logActivity(req.user.id, 'CREATE_FOLDER', folder.id, 'folder');
-
         res.status(201).json({ success: true, data: folder });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const getStorageContents = async (req, res) => {
+exports.getStorageContents = async (req, res) => {
     try {
-        const instructor_id = req.user.id;
         const { folder_id } = req.query;
 
         const [folders, files, stats, recent] = await Promise.all([
-            instructorFileService.getFolders(instructor_id, folder_id),
-            instructorFileService.getFiles(instructor_id, folder_id),
-            instructorFileService.getStorageStats(instructor_id),
-            instructorFileService.getRecentFiles(instructor_id)
+            instructorFileService.getFolders(req.user.id, folder_id),
+            instructorFileService.getFiles(req.user.id, folder_id),
+            instructorFileService.getStorageStats(req.user.id),
+            instructorFileService.getRecentFiles(req.user.id)
         ]);
 
-        res.status(200).json({
-            success: true,
-            data: {
-                folders,
-                files,
-                stats,
-                recent
-            }
-        });
+        res.json({ success: true, data: { folders, files, stats, recent } });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const uploadInstructorFile = async (req, res) => {
+exports.uploadInstructorFile = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: "No file uploaded" });
         }
 
-        const { folder_id } = req.body;
-        const instructor_id = req.user.id;
-        const fileData = {
+        const file = await instructorFileService.uploadFile({
             name: req.file.originalname,
-            folder_id: folder_id || null,
-            instructor_id,
+            folder_id: req.body.folder_id || null,
+            instructor_id: req.user.id,
             file_path: `/uploads/materials/${req.file.filename}`,
             file_type: req.file.mimetype.split("/")[1],
             file_size_bytes: req.file.size
-        };
+        });
 
-        const file = await instructorFileService.uploadFile(fileData);
-
-        // Log activity
         await logActivity(req.user.id, 'UPLOAD_MATERIAL', file.id, 'material');
-
         res.status(201).json({ success: true, data: file });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const renameFolder = async (req, res) => {
+exports.renameFolder = async (req, res) => {
     try {
-        const { id } = req.params;
-        const { name } = req.body;
-        const folder = await instructorFileService.renameFolder(id, name, req.user.id);
-        res.status(200).json({ success: true, data: folder });
+        const folder = await instructorFileService.renameFolder(req.params.id, req.body.name, req.user.id);
+        res.json({ success: true, data: folder });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const renameFile = async (req, res) => {
+exports.renameFile = async (req, res) => {
     try {
-        const { id } = req.params;
-        const { name } = req.body;
-        const file = await instructorFileService.renameFile(id, name, req.user.id);
-        res.status(200).json({ success: true, data: file });
+        const file = await instructorFileService.renameFile(req.params.id, req.body.name, req.user.id);
+        res.json({ success: true, data: file });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const deleteFolder = async (req, res) => {
+exports.deleteFolder = async (req, res) => {
     try {
-        const { id } = req.params;
-        await instructorFileService.softDeleteFolder(id, req.user.id);
-        res.status(200).json({ success: true, message: "Folder moved to recycle bin" });
+        await instructorFileService.softDeleteFolder(req.params.id, req.user.id);
+        res.json({ success: true, message: "Folder moved to recycle bin" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const deleteFile = async (req, res) => {
+exports.deleteFile = async (req, res) => {
     try {
-        const { id } = req.params;
-        await instructorFileService.softDeleteFile(id, req.user.id);
-        res.status(200).json({ success: true, message: "File moved to recycle bin" });
+        await instructorFileService.softDeleteFile(req.params.id, req.user.id);
+        res.json({ success: true, message: "File moved to recycle bin" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const moveEntry = async (req, res) => {
+exports.moveEntry = async (req, res) => {
     try {
         const { id, type, target_folder_id } = req.body;
         const entry = await instructorFileService.moveEntry(id, type, target_folder_id, req.user.id);
-        res.status(200).json({ success: true, data: entry });
+        res.json({ success: true, data: entry });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const duplicateEntry = async (req, res) => {
+exports.duplicateEntry = async (req, res) => {
     try {
         const { id, type, target_folder_id, new_name } = req.body;
         const entry = await instructorFileService.duplicateEntry(id, type, target_folder_id, req.user.id, new_name);
@@ -132,46 +108,31 @@ const duplicateEntry = async (req, res) => {
     }
 };
 
-const getRecycleBin = async (req, res) => {
+exports.getRecycleBin = async (req, res) => {
     try {
         const items = await instructorFileService.getRecycleBin(req.user.id);
-        res.status(200).json({ success: true, data: items });
+        res.json({ success: true, data: items });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const restoreEntry = async (req, res) => {
+exports.restoreEntry = async (req, res) => {
     try {
         const { id, type } = req.body;
         const item = await instructorFileService.restoreEntry(id, type, req.user.id);
-        res.status(200).json({ success: true, data: item, message: "Item restored successfully" });
+        res.json({ success: true, data: item, message: "Item restored successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-const permanentlyDeleteEntry = async (req, res) => {
+exports.permanentlyDeleteEntry = async (req, res) => {
     try {
         const { id, type } = req.params;
         await instructorFileService.permanentlyDeleteEntry(id, type, req.user.id);
-        res.status(200).json({ success: true, message: "Item permanently deleted" });
+        res.json({ success: true, message: "Item permanently deleted" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
-};
-
-module.exports = {
-    createFolder,
-    getStorageContents,
-    uploadInstructorFile,
-    renameFolder,
-    renameFile,
-    deleteFolder,
-    deleteFile,
-    moveEntry,
-    duplicateEntry,
-    getRecycleBin,
-    restoreEntry,
-    permanentlyDeleteEntry
 };

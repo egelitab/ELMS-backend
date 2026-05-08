@@ -1,17 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const messageController = require("../controllers/messageController");
-const verifyToken = require("../middleware/authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// One-to-One
-router.post("/", verifyToken(), messageController.sendMessage);
-router.get("/inbox", verifyToken(), messageController.getInbox);
-router.get("/history/:user2_id", verifyToken(), messageController.getChatHistory);
+// One-to-One messaging
+router.post("/", authMiddleware(), messageController.sendMessage);
+router.get("/inbox", authMiddleware(), messageController.getInbox);
+router.get("/history/:user2_id", authMiddleware(), messageController.getChatHistory);
 
 // Group Chat
-router.post("/group", verifyToken(), messageController.sendGroupMessage);
-router.get("/group/inbox", verifyToken(), messageController.getGroupInbox);
-router.get("/group/history/:group_id", verifyToken(), messageController.getGroupChatHistory);
-router.get("/instructor/groups", verifyToken(), messageController.getAllGroupsForInstructor);
+router.post("/group", authMiddleware(), messageController.sendGroupMessage);
+router.get("/group/inbox", authMiddleware(), messageController.getGroupInbox);
+router.get("/group/history/:group_id", authMiddleware(), messageController.getGroupChatHistory);
+router.get("/instructor/groups", authMiddleware(), messageController.getAllGroupsForInstructor);
 
 module.exports = router;

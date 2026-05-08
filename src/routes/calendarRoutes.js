@@ -1,26 +1,16 @@
 const express = require("express");
 const router = express.Router();
 const calendarController = require("../controllers/calendarController");
-const verifyToken = require("../middleware/authMiddleware");
-const authorizeRoles = require("../middleware/roleMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
-router.post("/upload",
-    verifyToken(),
-    authorizeRoles("admin"),
-    upload.single("file"),
-    calendarController.uploadCalendar
-);
+// Upload academic calendar (admin only)
+router.post("/upload", authMiddleware(["admin"]), upload.single("file"), calendarController.uploadCalendar);
 
-router.get("/",
-    verifyToken(),
-    calendarController.getAllCalendars
-);
+// Get all calendars
+router.get("/", authMiddleware(), calendarController.getAllCalendars);
 
-router.delete("/:id",
-    verifyToken(),
-    authorizeRoles("admin"),
-    calendarController.deleteCalendar
-);
+// Delete a calendar (admin only)
+router.delete("/:id", authMiddleware(["admin"]), calendarController.deleteCalendar);
 
 module.exports = router;

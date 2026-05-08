@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const path = require("path");
+const { apiLimiter } = require("./middleware/rateLimiter");
 
 // Import routes
 const authRoutes = require("./routes/authRoutes");
@@ -21,6 +22,12 @@ const scheduleRoutes = require("./routes/scheduleRoutes");
 const calendarRoutes = require("./routes/calendarRoutes");
 const systemMessageRoutes = require("./routes/systemMessageRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const enrollmentRoutes = require("./routes/enrollmentRoutes");
+const supportRoutes = require("./routes/supportRoutes");
+const attendanceRoutes = require("./routes/attendanceRoutes");
+const conversionRoutes = require("./routes/conversionRoutes");
+const quizRoutes = require("./routes/quizRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 
 
 const app = express();
@@ -31,6 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(helmet());
 app.use(morgan("dev"));
+app.use("/api", apiLimiter);
 
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
@@ -52,6 +60,12 @@ app.use("/api/schedules", scheduleRoutes);
 app.use("/api/calendars", calendarRoutes);
 app.use("/api/system-messages", systemMessageRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
+app.use("/api/tickets", supportRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/convert", conversionRoutes);
+app.use("/api/quizzes", quizRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 
 // Health check route

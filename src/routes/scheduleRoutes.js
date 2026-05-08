@@ -1,38 +1,22 @@
 const express = require("express");
 const router = express.Router();
 const scheduleController = require("../controllers/scheduleController");
-const verifyToken = require("../middleware/authMiddleware");
-const authorizeRoles = require("../middleware/roleMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
-// All schedule routes require admin or instructor roles, but usually admin for global uploads
-router.post("/upload",
-    verifyToken(),
-    authorizeRoles("admin"),
-    upload.single("file"),
-    scheduleController.uploadSchedule
-);
+// Upload a schedule (admin only)
+router.post("/upload", authMiddleware(["admin"]), upload.single("file"), scheduleController.uploadSchedule);
 
-router.get("/my-schedule",
-    verifyToken(),
-    scheduleController.getMySchedules
-);
+// Get schedules for the current user
+router.get("/my-schedule", authMiddleware(), scheduleController.getMySchedules);
 
-router.get("/",
-    verifyToken(),
-    scheduleController.getAllSchedules
-);
+// Get all schedules
+router.get("/", authMiddleware(), scheduleController.getAllSchedules);
 
-router.delete("/:id",
-    verifyToken(),
-    authorizeRoles("admin"),
-    scheduleController.deleteSchedule
-);
+// Delete a schedule (admin only)
+router.delete("/:id", authMiddleware(["admin"]), scheduleController.deleteSchedule);
 
-router.patch("/:id/content",
-    verifyToken(),
-    authorizeRoles("admin"),
-    scheduleController.updateDigitalContent
-);
+// Update digital schedule content (admin only)
+router.patch("/:id/content", authMiddleware(["admin"]), scheduleController.updateDigitalContent);
 
 module.exports = router;
