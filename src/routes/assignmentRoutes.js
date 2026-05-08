@@ -1,70 +1,36 @@
 const express = require("express");
 const router = express.Router();
 const assignmentController = require("../controllers/assignmentController");
-const verifyToken = require("../middleware/authMiddleware");
-const authorizeRoles = require("../middleware/roleMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
 // ========================
 // Instructor Routes
 // ========================
 
-// Get overview of all assignments and grading status
-router.get(
-    "/grading-overview",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    assignmentController.getGradingOverview
-);
+// Get grading overview
+router.get("/grading-overview", authMiddleware(["instructor"]), assignmentController.getGradingOverview);
 
 // Create an assignment
-router.post(
-    "/",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    upload.single("file"), // Optional attachment when creating assignment
-    assignmentController.createAssignment
-);
+router.post("/", authMiddleware(["instructor"]), upload.single("file"), assignmentController.createAssignment);
 
-// Get all assignments for a specific course
-router.get("/course/:courseId", verifyToken(), assignmentController.getAssignments);
+// Get all assignments for a course
+router.get("/course/:courseId", authMiddleware(), assignmentController.getAssignments);
 
-// View all submissions for a specific assignment
-router.get(
-    "/:assignmentId/submissions",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    assignmentController.viewSubmissions
-);
+// View submissions for an assignment
+router.get("/:assignmentId/submissions", authMiddleware(["instructor"]), assignmentController.viewSubmissions);
 
-// Grade a specific submission
-router.put(
-    "/submissions/:id/grade",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    assignmentController.gradeSubmission
-);
+// Grade a submission
+router.put("/submissions/:id/grade", authMiddleware(["instructor"]), assignmentController.gradeSubmission);
 
 // ========================
 // Student Routes
 // ========================
 
 // Submit an assignment
-router.post(
-    "/submit",
-    verifyToken(),
-    authorizeRoles("student"),
-    upload.single("file"), // the submitted work
-    assignmentController.submitAssignment
-);
+router.post("/submit", authMiddleware(["student"]), upload.single("file"), assignmentController.submitAssignment);
 
 // Get all assignments for the logged-in student
-router.get(
-    "/student/my-assignments",
-    verifyToken(),
-    authorizeRoles("student"),
-    assignmentController.getStudentAssignments
-);
+router.get("/student/my-assignments", authMiddleware(["student"]), assignmentController.getStudentAssignments);
 
 module.exports = router;
-

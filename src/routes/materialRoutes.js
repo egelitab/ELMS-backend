@@ -1,60 +1,26 @@
 const express = require("express");
 const router = express.Router();
 const materialController = require("../controllers/materialController");
-const verifyToken = require("../middleware/authMiddleware");
-const authorizeRoles = require("../middleware/roleMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 const upload = require("../middleware/uploadMiddleware");
 
 // Only instructors can upload materials
-router.post(
-    "/",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    upload.single("file"), // the name attribute in form-data should be 'file'
-    materialController.uploadMaterial
-);
+router.post("/", authMiddleware(["instructor"]), upload.single("file"), materialController.uploadMaterial);
 
-// Any logged-in user can view materials for a specific course
-router.get("/course/:courseId", verifyToken(), materialController.getMaterialsByCourse);
+// Any logged-in user can view materials for a course
+router.get("/course/:courseId", authMiddleware(), materialController.getMaterialsByCourse);
 
 // Get all materials uploaded by the instructor
-router.get(
-    "/instructor",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    materialController.getInstructorMaterials
-);
+router.get("/instructor", authMiddleware(["instructor"]), materialController.getInstructorMaterials);
 
 // Only instructors can delete their materials
-router.delete(
-    "/:id",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    materialController.deleteMaterial
-);
+router.delete("/:id", authMiddleware(["instructor"]), materialController.deleteMaterial);
 
 // Only instructors can rename their materials
-router.patch(
-    "/:id/rename",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    materialController.renameMaterial
-);
+router.patch("/:id/rename", authMiddleware(["instructor"]), materialController.renameMaterial);
 
-// Instructors can share their materials with specific target sections
-router.post(
-    "/share",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    materialController.shareMaterials
-);
-
-// Instructors can unshare their materials
-router.post(
-    "/unshare",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    materialController.unshareMaterials
-);
+// Instructors can share/unshare materials
+router.post("/share", authMiddleware(["instructor"]), materialController.shareMaterials);
+router.post("/unshare", authMiddleware(["instructor"]), materialController.unshareMaterials);
 
 module.exports = router;

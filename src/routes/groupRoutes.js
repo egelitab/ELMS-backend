@@ -1,37 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const groupController = require("../controllers/groupController");
-const verifyToken = require("../middleware/authMiddleware");
-const authorizeRoles = require("../middleware/roleMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// Generate generic groups for a course
-router.post(
-    "/:courseId/generate",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    groupController.generateGroups
-);
+// Generate groups for a course
+router.post("/:courseId/generate", authMiddleware(["instructor"]), groupController.generateGroups);
 
-// View groups for a student (groups they belong to)
-router.get(
-    "/student/my-groups",
-    verifyToken(),
-    groupController.getStudentGroups
-);
+// View groups the student belongs to
+router.get("/student/my-groups", authMiddleware(), groupController.getStudentGroups);
 
-// View groups for a generic course
-router.get(
-    "/:courseId",
-    verifyToken(),
-    groupController.getGroups
-);
+// View groups for a course
+router.get("/:courseId", authMiddleware(), groupController.getGroups);
 
-// Delete a specific batch of groups
-router.delete(
-    "/:courseId/batch",
-    verifyToken(),
-    authorizeRoles("instructor"),
-    groupController.deleteBatch
-);
+// Delete a batch of groups
+router.delete("/:courseId/batch", authMiddleware(["instructor"]), groupController.deleteBatch);
 
 module.exports = router;
