@@ -28,6 +28,7 @@ const attendanceRoutes = require("./routes/attendanceRoutes");
 const conversionRoutes = require("./routes/conversionRoutes");
 const quizRoutes = require("./routes/quizRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const goalRoutes = require("./routes/goalRoutes");
 
 
 const app = express();
@@ -66,6 +67,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/convert", conversionRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/goals", goalRoutes);
 
 
 // Health check route
