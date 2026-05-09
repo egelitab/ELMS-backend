@@ -17,6 +17,15 @@ const authMiddleware = (allowedRoles = []) => {
 
       req.user = decoded;
 
+      // Auto-log heartbeat to track "online" status for active users
+      try {
+        const { logActivity } = require("../services/activityLogger");
+        // We use a non-blocking call here so auth doesn't slow down
+        logActivity(req.user.id, 'HEARTBEAT', null, 'user', req.ip);
+      } catch (err) {
+        // Silent catch to ensure auth still works even if logging fails
+      }
+
       // Role Check Logic
       // If allowedRoles is empty, anyone with a valid token gets through.
       // If roles are specified, check if the user's role matches.

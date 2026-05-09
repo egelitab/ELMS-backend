@@ -30,8 +30,19 @@ exports.getStats = async () => {
     const deptCount = await pool.query("SELECT COUNT(*)::int FROM departments");
 
     // Real active sessions: distinct users with activity in last 15 mins (stricter window)
-    const activeSessionsResult = await pool.query("SELECT COUNT(DISTINCT user_id)::int FROM activity_logs WHERE created_at > NOW() - INTERVAL '15 minutes'");
-    const activeSessions = activeSessionsResult.rows[0].count;
+    const onlineUsersResult = await pool.query(`
+        SELECT DISTINCT ON (l.user_id) 
+            u.id, u.first_name, u.last_name, u.email, u.role, 
+            d.name as department, l.ip_address, l.created_at as last_activity
+        FROM activity_logs l
+        JOIN users u ON l.user_id = u.id
+        LEFT JOIN departments d ON u.department_id = d.id
+        WHERE l.created_at > NOW() - INTERVAL '15 minutes'
+        ORDER BY l.user_id, l.created_at DESC
+    `);
+
+    const onlineUsers = onlineUsersResult.rows;
+    const activeSessions = onlineUsers.length;
 
     // Real storage usage from the actual uploads directory
     const uploadsDir = path.join(__dirname, "..", "..", "uploads");
@@ -108,6 +119,7 @@ exports.getStats = async () => {
         totalCourses: courseCount.rows[0].count,
         totalDepartments: deptCount.rows[0].count,
         activeSessions: activeSessions,
+        onlineUsers: onlineUsers,
         systemStatus: "Healthy",
         completionRate: completionRate,
         deptBreakdown: deptBreakdownResult.rows,
