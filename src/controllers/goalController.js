@@ -63,6 +63,48 @@ exports.getGoalsByCourse = async (req, res) => {
     }
 };
 
+exports.getMyGoals = async (req, res) => {
+    try {
+        const goals = await pool.query(`
+            SELECT cg.*, c.title as course_title,
+            ROUND((
+                SELECT COALESCE(SUM(duration_seconds) / 3600.0, 0)
+                FROM reading_logs rl
+                WHERE rl.course_id = cg.course_id 
+                  AND rl.user_id = e.user_id
+                  AND rl.created_at >= CASE 
+                      WHEN cg.recurrence = 'Daily' THEN date_trunc('day', current_date)
+                      WHEN cg.recurrence = 'Monthly' THEN date_trunc('month', current_date)
+                      ELSE date_trunc('week', current_date)
+                  END
+            ), 1) as progress_hours
+            FROM course_goals cg 
+            JOIN enrollments e ON cg.course_id = e.course_id 
+            JOIN courses c ON c.id = cg.course_id
+            WHERE e.user_id = $1
+            ORDER BY cg.created_at DESC
+        `, [req.user.id]);
+        res.json(goals.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+exports.logReading = async (req, res) => {
+    try {
+        const { courseId, materialId, durationSeconds } = req.body;
+        await pool.query(
+            "INSERT INTO reading_logs (user_id, course_id, material_id, duration_seconds) VALUES ($1, $2, $3, $4)",
+            [req.user.id, courseId, materialId, durationSeconds]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
 exports.deleteGoal = async (req, res) => {
     try {
         const { goalId } = req.params;
@@ -80,6 +122,43 @@ exports.deleteGoal = async (req, res) => {
         res.json({ success: true, message: "Goal deleted" });
     } catch (error) {
         console.error(error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+exports.getUserStarCount = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        // Logic: Count stars for each goal where progress >= 50% (1 star), 75% (2nd star), 100% (3rd star)
+        const result = await pool.query(`
+            WITH progress_data AS (
+                SELECT cg.id, cg.target_hours, 
+                (
+                    SELECT COALESCE(SUM(duration_seconds) / 3600.0, 0)
+                    FROM reading_logs rl
+                    WHERE rl.course_id = cg.course_id 
+                      AND rl.user_id = $1
+                      AND rl.created_at >= CASE 
+                          WHEN cg.recurrence = 'Daily' THEN date_trunc('day', current_date)
+                          WHEN cg.recurrence = 'Monthly' THEN date_trunc('month', current_date)
+                          ELSE date_trunc('week', current_date)
+                      END
+                ) as progress_hours
+                FROM course_goals cg
+                JOIN enrollments e ON cg.course_id = e.course_id
+                WHERE e.user_id = $1
+            )
+            SELECT 
+                SUM(CASE WHEN target_hours > 0 AND progress_hours >= (target_hours * 1.0) THEN 3
+                         WHEN target_hours > 0 AND progress_hours >= (target_hours * 0.75) THEN 2
+                         WHEN target_hours > 0 AND progress_hours >= (target_hours * 0.5) THEN 1
+                         ELSE 0 END) as total_stars
+            FROM progress_data
+        `, [userId]);
+
+        res.json({ success: true, total_stars: parseInt(result.rows[0].total_stars || 0) });
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
