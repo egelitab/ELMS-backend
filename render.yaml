@@ -1,0 +1,26 @@
+services:
+  # The web service for the ELMS API
+  - type: web
+    name: elms-backend
+    runtime: docker
+    plan: free
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: elms-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+
+databases:
+  # The PostgreSQL database
+  - name: elms-db
+    databaseName: elms_db
+    user: postgres
+    plan: free
