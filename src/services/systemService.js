@@ -26,6 +26,7 @@ const getDirSize = (dirPath) => {
 
 exports.getStats = async () => {
     const userCount = await pool.query("SELECT COUNT(*)::int FROM users");
+    const adminCount = await pool.query("SELECT COUNT(*)::int FROM users WHERE role = 'admin'");
     const courseCount = await pool.query("SELECT COUNT(*)::int FROM courses");
     const deptCount = await pool.query("SELECT COUNT(*)::int FROM departments");
 
@@ -116,19 +117,17 @@ exports.getStats = async () => {
 
     return {
         totalUsers: userCount.rows[0].count,
+        adminCount: adminCount.rows[0].count,
         totalCourses: courseCount.rows[0].count,
         totalDepartments: deptCount.rows[0].count,
-        activeSessions: activeSessions,
-        onlineUsers: onlineUsers,
-        systemStatus: "Healthy",
-        completionRate: completionRate,
-        deptBreakdown: deptBreakdownResult.rows,
+        activeSessions,
+        onlineUsers,
         storage: {
-            usedGB: usedGB,
-            totalGB: 500, // Still assuming 500GB limit or from system? 
-            assessmentsGB: assessmentsGB,
-            othersGB: Math.max(0, Math.round((usedGB - assessmentsGB) * 100) / 100)
+            usedGB,
+            assessmentsGB,
+            totalGB: 50 // Mock total storage limit
         },
+        systemActivities: systemActivities.rows,
         engagement: {
             day: {
                 labels: dailyEngagement.rows.map(r => r.label),
@@ -143,7 +142,8 @@ exports.getStats = async () => {
                 data: monthlyEngagement.rows.map(r => r.count)
             }
         },
-        recentActivities: systemActivities.rows
+        deptBreakdown: deptBreakdownResult.rows,
+        systemStatus: "Healthy"
     };
 };
 
